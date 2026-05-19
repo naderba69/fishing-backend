@@ -1,11 +1,3 @@
-# =============================================================================
-# Tunisia Surfcasting Analyzer - Backend API v1.0.0
-# =============================================================================
-# نظام تحليل ذكي لظروف صيد الشاطئ في السواحل التونسية
-# مطابق 100% للمواصفات المطلوبة: منطق 24 ساعة، مصفوفة المخاطر، الضغط الديناميكي،
-# التيارات، وزن الرصاص، جلب مزدوج متزامن، ودعم المواقع المخصصة.
-# =============================================================================
-
 import asyncio
 import logging
 import httpx
@@ -16,9 +8,9 @@ from pydantic import BaseModel, Field, field_validator
 from typing import List, Dict, Any
 from datetime import datetime, timezone, timedelta
 
-# ---------------------------------------------
-# إعدادات التسجيل (Logging)
-# ---------------------------------------------
+# ==========================================
+# إعدادات التسجيل والمراقبة
+# ==========================================
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
@@ -26,20 +18,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger("surfcast-api")
 
-# ---------------------------------------------
-# تهيئة تطبيق FastAPI
-# ---------------------------------------------
+# ==========================================
+# تهيئة تطبيق FastAPI وتفعيل CORS الكامل
+# ==========================================
 app = FastAPI(
     title="Tunisia Surfcasting Analyzer API",
-    description="Smart marine weather analysis for Tunisian surfcasting anglers",
+    description="نظام تحليل ذكي لظروف صيد الشاطئ في السواحل التونسية",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
 
-# ---------------------------------------------
-# إعدادات CORS الكاملة
-# ---------------------------------------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -47,126 +36,117 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
-    max_age=3600)
+    max_age=3600
+)
 
-# ---------------------------------------------
-# 1. قاعدة بيانات الشواطئ التونسية المبرمجة مسبقاً
-# ---------------------------------------------
+# ==========================================
+# 1. قاعدة بيانات الشواطئ التونسية
+# ==========================================
 TUNISIAN_SPOTS: List[Dict[str, Any]] = [
     {"name": "قلعة الأندلس (تونس العاصمة)", "lat": 36.9150, "lon": 10.1550, "facing": "N"},
     {"name": "شاطئ رواد (تونس العاصمة)", "lat": 36.9380, "lon": 10.2150, "facing": "NE"},
     {"name": "الهوارية (نابل)", "lat": 37.0500, "lon": 11.0150, "facing": "N"},
     {"name": "قليبية (نابل)", "lat": 36.8500, "lon": 11.1000, "facing": "E"},
-    {"name": "حمام الغزاز (نابل)", "lat": 36.8850, "lon": 11.1150, "facing": "NE"},
-    {"name": "كاب سيرات (بنزرت)", "lat": 37.2300, "lon": 9.2100, "facing": "NW"},
+    {"name": "حمام الغزاز (نابل)", "lat": 36.8850, "lon": 11.1150, "facing": "NE"},    {"name": "كاب سيرات (بنزرت)", "lat": 37.2300, "lon": 9.2100, "facing": "NW"},
     {"name": "سيدي مشرق (بنزرت)", "lat": 37.1600, "lon": 9.1200, "facing": "N"},
     {"name": "الرمال (بنزرت)", "lat": 37.2750, "lon": 9.9150, "facing": "NW"},
     {"name": "شط مريم (سوسة)", "lat": 35.9350, "lon": 10.5600, "facing": "E"},
     {"name": "هرقلة (سوسة)", "lat": 36.0300, "lon": 10.5100, "facing": "NE"}
 ]
 
-# ---------------------------------------------
-# دوال مساعدة: الجغرافيا والأرصاد البحرية
-# ---------------------------------------------
+# ==========================================
+# 2. الدوال المساعدة (الجغرافيا والأرصاد)
+# ==========================================
 def dir_to_deg(d: str) -> float:
-    """تحويل اتجاه البوصلة إلى درجات رقمية (0-360)"""
-    direction_map = {
-        "N": 0.0, "NNE": 22.5, "NE": 45.0, "ENE": 67.5, "E": 90.0, "ESE": 112.5,
-        "SE": 135.0, "SSE": 157.5, "S": 180.0, "SSW": 202.5, "SW": 225.0, "WSW": 247.5,
+    mapping = {
+        "N": 0.0, "NNE": 22.5, "NE": 45.0, "ENE": 67.5,
+        "E": 90.0, "ESE": 112.5, "SE": 135.0, "SSE": 157.5,
+        "S": 180.0, "SSW": 202.5, "SW": 225.0, "WSW": 247.5,
         "W": 270.0, "WNW": 292.5, "NW": 315.0, "NNW": 337.5
     }
-    return direction_map.get(d.strip().upper(), 0.0)
+    return mapping.get(d.strip().upper(), 0.0)
 
 
 def classify_wind(wind_deg: float, beach_dir: str) -> str:
-    """
-    تصنيف الرياح نسبة لاتجاه واجهة الشاطئ:
-    - Onshore: رياح تهب من البحر نحو الشاطئ
-    - Offshore: رياح تهب من الشاطئ نحو البحر
-    - Side-shore: رياح جانبية
-    """
     beach_deg = dir_to_deg(beach_dir)
     diff = abs(wind_deg - beach_deg)
+    
     if diff > 180.0:
         diff = 360.0 - diff
     
     if diff <= 45.0:
         return "Onshore"
-    elif diff >= 135.0:
+    
+    if diff >= 135.0:
         return "Offshore"
-    else:
-        return "Side-shore"
+    
+    return "Side-shore"
+
 
 def is_low_tide_approx(utc_hour: int, lat: float) -> bool:
-    """
-    تقدير تقريبي لمرحلة المد المنخفض للساحل التونسي.
-    يستخدم نموذجاً توافقياً مبسطاً لدورة شبه يومية (~12.42 ساعة).
-    """
-    phase_offset = 3.0 if lat < 37.0 else 2.0
-    tidal_cycle = 12.42
-    phase_angle = ((utc_hour - phase_offset) % tidal_cycle) / tidal_cycle * 360.0
-    low_tide_window = 40.0
-    return (phase_angle < low_tide_window) or (phase_angle > (360.0 - low_tide_window))
+    offset = 3.0 if lat < 37.0 else 2.0
+    phase = ((utc_hour - offset) % 12.42) / 12.42 * 360.0
+    return phase < 40.0 or phase > 320.0
 
 
-def get_current_utc_index(times_list: List[str]) -> int:
-    """إيجاد الفهرس الأقرب للوقت الحالي UTC في مصفوفة البيانات الساعية"""
+def get_utc_index(times_list: List[str]) -> int:
     if not times_list:
         return 0
+    
     now = datetime.now(timezone.utc)
     closest_idx = 0
     min_diff = timedelta(hours=24)
-    
-    for i, t_str in enumerate(times_list):
+        for i, t_str in enumerate(times_list):
         try:
             parsed_time = datetime.fromisoformat(t_str.replace("Z", "+00:00"))
             diff = abs(now - parsed_time)
             if diff < min_diff:
                 min_diff = diff
                 closest_idx = i
-        except ValueError:
+        except Exception:
             continue
+            
     return closest_idx
 
 
-def safe_list_get(data_list: List[Any], index: int, default_value: Any = None) -> Any:
-    """جلب آمن من القائمة مع قيمة افتراضية لتجنب IndexError"""
+def safe_get(data_list: List, index: int, default: Any = None) -> Any:
     try:
-        return data_list[index] if 0 <= index < len(data_list) else default_value
-    except (IndexError, TypeError):
-        return default_value
+        if 0 <= index < len(data_list):
+            return data_list[index]
+        return default
+    except Exception:
+        return default
 
 
-# ---------------------------------------------
-# 2. محرك التحليل الذكي ومصفوفة المخاطر (REVOLUTIONARY FISHING LOGIC)
-# ---------------------------------------------
+# ==========================================
+# 3. محرك التحليل الذكي ومصفوفة المخاطر
+# ==========================================
 def analyze_single_spot(lat: float, lon: float, beach_dir: str, weather_data: Dict, marine_data: Dict) -> Dict[str, Any]:
     now_utc = datetime.now(timezone.utc)
     
-    # استخراج المصفوفات من استجابات الـ API
     w_hourly = weather_data.get("hourly", {})
-    m_hourly = marine_data.get("hourly", {})    
+    m_hourly = marine_data.get("hourly", {})
     w_times = w_hourly.get("time", [])
-    current_idx = get_current_utc_index(w_times)
+    
+    current_idx = get_utc_index(w_times)
     
     # القيم الحالية
-    wind_spd = safe_list_get(w_hourly.get("wind_speed_10m", []), current_idx, 15.0)
-    wind_dir = safe_list_get(w_hourly.get("wind_direction_10m", []), current_idx, 270.0)
-    current_pres = safe_list_get(w_hourly.get("surface_pressure", []), current_idx, 1015.0)
+    wind_spd = safe_get(w_hourly.get("wind_speed_10m", []), current_idx, 15.0)
+    wind_dir = safe_get(w_hourly.get("wind_direction_10m", []), current_idx, 270.0)
+    current_pres = safe_get(w_hourly.get("surface_pressure", []), current_idx, 1015.0)
     
-    swell_h = safe_list_get(m_hourly.get("swell_wave_height", []), current_idx, 0.8)
-    swell_p = safe_list_get(m_hourly.get("swell_wave_period", []), current_idx, 8.0)
-    swell_dir = safe_list_get(m_hourly.get("swell_wave_direction", []), current_idx, 0.0)
+    swell_h = safe_get(m_hourly.get("swell_wave_height", []), current_idx, 0.8)
+    swell_p = safe_get(m_hourly.get("swell_wave_period", []), current_idx, 8.0)
+    swell_dir = safe_get(m_hourly.get("swell_wave_direction", []), current_idx, 0.0)
     
-    # اتجاه الضغط الجوي قبل 3 ساعات (Dynamic Pressure Trend)
+    # اتجاه الضغط الجوي (فرق 3 ساعات)
     idx_3h_ago = max(0, current_idx - 3)
-    pres_3h_ago = safe_list_get(w_hourly.get("surface_pressure", []), idx_3h_ago, current_pres)
-    pres_trend = current_pres - pres_3h_ago  # سالب = انخفاض، موجب = ارتفاع
+    pres_3h_ago = safe_get(w_hourly.get("surface_pressure", []), idx_3h_ago, current_pres)
+    pres_trend = current_pres - pres_3h_ago
     
     wind_type = classify_wind(wind_dir, beach_dir)
-    
-    # -----------------------------------------
-    # منطق الطحالب والحطام البحري (Persistent 24H Logic)
+        # -----------------------------------------
+    # منطق الطحالب والحطام (Persistent 24H Logic)
     # -----------------------------------------
     persistent_seaweed = False
     start_idx_24h = max(0, current_idx - 24)
@@ -174,9 +154,10 @@ def analyze_single_spot(lat: float, lon: float, beach_dir: str, weather_data: Di
     for i in range(start_idx_24h, current_idx):
         if i >= len(m_hourly.get("swell_wave_height", [])):
             break
+        
         hist_swell = m_hourly["swell_wave_height"][i]
         if hist_swell > 2.0:
-            hist_wind_dir = safe_list_get(w_hourly.get("wind_direction_10m", []), i, 0.0)
+            hist_wind_dir = safe_get(w_hourly.get("wind_direction_10m", []), i, 0.0)
             if classify_wind(hist_wind_dir, beach_dir) == "Onshore":
                 persistent_seaweed = True
                 break
@@ -193,8 +174,10 @@ def analyze_single_spot(lat: float, lon: float, beach_dir: str, weather_data: Di
         seaweed_risk = "Low"
     
     # -----------------------------------------
-    # منطق تيارات السحب (Rip Currents Risk)
-    # -----------------------------------------    is_low_tide = is_low_tide_approx(now_utc.hour, lat)
+    # منطق تيارات السحب (Rip Currents)
+    # -----------------------------------------
+    is_low_tide = is_low_tide_approx(now_utc.hour, lat)
+    
     if swell_p >= 14.0 and is_low_tide:
         rip_risk = "Confirmed"
     elif 10.0 <= swell_p < 14.0:
@@ -211,17 +194,17 @@ def analyze_single_spot(lat: float, lon: float, beach_dir: str, weather_data: Di
         wind_risk = "Low"
     elif 26.0 <= wind_spd <= 45.0:
         wind_risk = "High"
-    else:
-        wind_risk = "Confirmed"
+    else:        wind_risk = "Confirmed"
     
     # -----------------------------------------
-    # مصفوفة القرار النهائية (Ultimate Verdict Matrix)
+    # مصفوفة القرار النهائية (Ultimate Verdict)
     # -----------------------------------------
     score = 0
-    risk_map = {"None": 10, "Low": 5, "High": 2, "Confirmed": -5, "Confirmed/Persistent": -5}
-    score += risk_map.get(seaweed_risk, 0)
-    score += risk_map.get(rip_risk, 0)
-    score += risk_map.get(wind_risk, 0)
+    risk_points = {"None": 10, "Low": 5, "High": 2, "Confirmed": -5, "Confirmed/Persistent": -5}
+    
+    score += risk_points.get(seaweed_risk, 0)
+    score += risk_points.get(rip_risk, 0)
+    score += risk_points.get(wind_risk, 0)
     
     if 0.5 <= swell_h <= 1.2:
         score += 10
@@ -243,23 +226,30 @@ def analyze_single_spot(lat: float, lon: float, beach_dir: str, weather_data: Di
         explanation = "ظروف مقبولة للصيد مع بعض التحديات. استخدم معدات أثقل قليلاً وراقب التيارات الجانبية."
     elif score >= 5:
         verdict = "صعب جداً"
-        explanation = "ظروف قاسية: أمواج عاتية أو رياح شديدة أو طحالب متراكمة. يتطلب خبرة عالية وتجهيزات ثقيلة."    else:
+        explanation = "ظروف قاسية: أمواج عاتية أو رياح شديدة أو طحالب متراكمة. يتطلب خبرة عالية وتجهيزات ثقيلة."
+    else:
         verdict = "مستحيل"
         explanation = "الظروف خطرة: أمواج عاتية جداً مع رياح عاتية أو مخلفات طحالب مؤكدة. لا يُنصح بالنزول للشاطئ إطلاقاً."
     
     # -----------------------------------------
-    # حساب وزن الرصاص المقترح (Sinker Weight Logic)
+    # حساب وزن الرصاص المقترح (Sinker Weight)
     # -----------------------------------------
     base_weight = 50.0
-    weight = base_weight + (swell_h * 40.0) + (wind_spd * 0.8)
-    if wind_type == "Onshore":
-        weight += 20.0
-    if rip_risk == "High":
-        weight += 30.0
-    sinker_g = int(min(300, max(30, weight)))
+    calculated_weight = base_weight + (swell_h * 40.0) + (wind_spd * 0.8)
     
+    if wind_type == "Onshore":
+        calculated_weight += 20.0
+    
+    if rip_risk == "High":
+        calculated_weight += 30.0
+    
+    sinker_g = int(min(300, max(30, calculated_weight)))    
     return {
-        "location": {"lat": round(lat, 4), "lon": round(lon, 4), "facing": beach_dir},
+        "location": {
+            "lat": round(lat, 4),
+            "lon": round(lon, 4),
+            "facing": beach_dir
+        },
         "conditions": {
             "wind_speed_kmh": round(wind_spd, 1),
             "wind_type": wind_type,
@@ -282,9 +272,9 @@ def analyze_single_spot(lat: float, lon: float, beach_dir: str, weather_data: Di
     }
 
 
-# ---------------------------------------------
-# 3. نماذج البيانات (Pydantic v2)
-# ---------------------------------------------
+# ==========================================
+# 4. نماذج البيانات (Pydantic v2)
+# ==========================================
 class AnalyzeRequest(BaseModel):
     lat: float = Field(..., ge=-90.0, le=90.0)
     lon: float = Field(..., ge=-180.0, le=180.0)
@@ -292,7 +282,8 @@ class AnalyzeRequest(BaseModel):
     
     @field_validator('beach_direction')
     @classmethod
-    def normalize_dir(cls, v: str) -> str:        return v.strip().upper()
+    def normalize_dir(cls, v: str) -> str:
+        return v.strip().upper()
 
 
 class BatchSpot(BaseModel):
@@ -301,15 +292,14 @@ class BatchSpot(BaseModel):
     lon: float = Field(..., ge=-180.0, le=180.0)
     facing: str = Field(..., pattern=r"^(N|NNE|NE|ENE|E|ESE|SE|SSE|S|SSW|SW|WSW|W|WNW|NW|NNW)$")
     
-    @field_validator('facing')
-    @classmethod
+    @field_validator('facing')    @classmethod
     def normalize_facing(cls, v: str) -> str:
         return v.strip().upper()
 
 
-# ---------------------------------------------
-# 4. نقاط النهاية (API Endpoints)
-# ---------------------------------------------
+# ==========================================
+# 5. نقاط النهاية (API Endpoints)
+# ==========================================
 @app.get("/", tags=["Info"])
 async def root_info():
     return {
@@ -331,7 +321,6 @@ async def health_check(req: Request):
 
 @app.post("/analyze", tags=["Analysis"])
 async def analyze_spot(req: AnalyzeRequest):
-    """تحليل نقطة واحدة مع جلب متزامن للطقس والأمواج"""
     logger.info(f"Analyze request: lat={req.lat}, lon={req.lon}, dir={req.beach_direction}")
     
     async with httpx.AsyncClient(timeout=15.0) as client:
@@ -341,7 +330,8 @@ async def analyze_spot(req: AnalyzeRequest):
             f"&hourly=wind_speed_10m,wind_direction_10m,surface_pressure"
             f"&past_days=1&timezone=auto"
         )
-        marine_url = (            f"https://marine-api.open-meteo.com/v1/marine"
+        marine_url = (
+            f"https://marine-api.open-meteo.com/v1/marine"
             f"?latitude={req.lat}&longitude={req.lon}"
             f"&hourly=swell_wave_height,swell_wave_period,swell_wave_direction"
             f"&past_days=1&timezone=auto"
@@ -351,8 +341,7 @@ async def analyze_spot(req: AnalyzeRequest):
             weather_resp, marine_resp = await asyncio.gather(
                 client.get(weather_url),
                 client.get(marine_url)
-            )
-            weather_resp.raise_for_status()
+            )            weather_resp.raise_for_status()
             marine_resp.raise_for_status()
         except httpx.HTTPStatusError as e:
             logger.error(f"Open-Meteo HTTP error: {e.response.status_code}")
@@ -368,7 +357,6 @@ async def analyze_spot(req: AnalyzeRequest):
 
 @app.post("/best-spots", tags=["Discovery"])
 async def get_best_spots(custom_spots: List[BatchSpot]):
-    """مسح وتقييم جميع الشواطئ المبرمجة + المفضلات، وترتيبها من الأفضل للأسوأ"""
     all_spots = TUNISIAN_SPOTS + [s.model_dump() for s in custom_spots]
     results = []
     
@@ -386,25 +374,30 @@ async def get_best_spots(custom_spots: List[BatchSpot]):
                 res["name"] = spot["name"]
                 results.append(res)
                 
-                await asyncio.sleep(0.25)  # احترام حدود الـ API المجاني
+                await asyncio.sleep(0.25)
             except Exception as e:
                 logger.warning(f"Failed to evaluate spot '{spot.get('name', 'unknown')}': {e}")
                 continue
-        results.sort(key=lambda x: x["verdict"]["score"], reverse=True)
+    
+    results.sort(key=lambda x: x["verdict"]["score"], reverse=True)
     for rank, r in enumerate(results, start=1):
         r["rank"] = rank
     return results
 
 
-# ---------------------------------------------
-# 5. معالجة الأخطاء العامة
-# ---------------------------------------------
+# ==========================================
+# 6. معالجة الأخطاء العامة
+# ==========================================
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(req: Request, exc: HTTPException):
-    msgs = {
-        400: "طلب غير صالح", 404: "غير موجود", 422: "بيانات خاطئة",
-        429: "تجاوز الحد", 500: "خطأ داخلي", 502: "خطأ خارجي",
-        503: "غير متاح", 504: "انتهت المهلة"
+    msgs = {        400: "طلب غير صالح",
+        404: "غير موجود",
+        422: "بيانات خاطئة",
+        429: "تجاوز الحد",
+        500: "خطأ داخلي",
+        502: "خطأ خارجي",
+        503: "غير متاح",
+        504: "انتهت المهلة"
     }
     return JSONResponse(
         status_code=exc.status_code,
@@ -418,9 +411,9 @@ async def custom_http_exception_handler(req: Request, exc: HTTPException):
     )
 
 
-# ---------------------------------------------
-# 6. نقطة الدخول للتشغيل المحلي
-# ---------------------------------------------
+# ==========================================
+# 7. نقطة الدخول للتشغيل المحلي
+# ==========================================
 if __name__ == "__main__":
     import uvicorn
     import os
