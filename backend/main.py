@@ -1,6 +1,4 @@
-# =============================================================================
-# Tunisia Surfcasting Analyzer - Backend API v1.0.0
-# =============================================================================
+# Tunisia Surfcasting Analyzer - Backend v1.0.0
 import asyncio
 import logging
 import httpx
@@ -11,17 +9,12 @@ from pydantic import BaseModel, Field, field_validator
 from typing import List, Dict, Any
 from datetime import datetime, timezone, timedelta
 
-# إعدادات التسجيل
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("surfcast-api")
 
-# تهيئة التطبيق
 app = FastAPI(title="Tunisia Surfcasting Analyzer API", version="1.0.0", docs_url="/docs")
-
-# CORS
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# الشواطئ التونسية
 TUNISIAN_SPOTS = [
     {"name": "قلعة الأندلس (تونس)", "lat": 36.9150, "lon": 10.1550, "facing": "N", "region": "تونس"},
     {"name": "شاطئ رواد (تونس)", "lat": 36.9380, "lon": 10.2150, "facing": "NE", "region": "تونس"},
@@ -35,12 +28,11 @@ TUNISIAN_SPOTS = [
     {"name": "هرقلة (سوسة)", "lat": 36.0300, "lon": 10.5100, "facing": "NE", "region": "سوسة"}
 ]
 
-# دوال مساعدة
-def dir_to_deg(d: str) -> float:
-    return {"N":0,"NNE":22.5,"NE":45,"ENE":67.5,"E":90,"ESE":112.5,"SE":135,"SSE":157.5,
-            "S":180,"SSW":202.5,"SW":225,"WSW":247.5,"W":270,"WNW":292.5,"NW":315,"NNW":337.5}.get(d.upper().strip(), 0.0)
+def dir_to_deg(d):
+    m = {"N":0,"NNE":22.5,"NE":45,"ENE":67.5,"E":90,"ESE":112.5,"SE":135,"SSE":157.5,"S":180,"SSW":202.5,"SW":225,"WSW":247.5,"W":270,"WNW":292.5,"NW":315,"NNW":337.5}
+    return m.get(d.upper().strip(), 0.0)
 
-def classify_wind(wind_deg: float, beach_dir: str) -> str:
+def classify_wind(wind_deg, beach_dir):
     diff = abs(wind_deg - dir_to_deg(beach_dir))
     diff = 360 - diff if diff > 180 else diff
     if diff <= 45:
@@ -48,14 +40,14 @@ def classify_wind(wind_deg: float, beach_dir: str) -> str:
     if diff >= 135:
         return "Offshore"
     return "Side-shore"
-def is_low_tide_approx(utc_hour: int, lat: float) -> bool:
+
+def is_low_tide_approx(utc_hour, lat):
     offset = 3.0 if lat < 37.0 else 2.0
     phase = ((utc_hour - offset) % 12.42) / 12.42 * 360
     return phase < 40 or phase > 320
 
-def get_utc_index(target: datetime, times: List[str]) -> int:
-    if not times:
-        return 0
+def get_utc_index(target, times):
+    if not times:        return 0
     idx, min_diff = 0, timedelta(hours=24)
     for i, t in enumerate(times):
         try:
@@ -68,14 +60,13 @@ def get_utc_index(target: datetime, times: List[str]) -> int:
             continue
     return idx
 
-def safe_get(lst: List, idx: int, default: Any = None) -> Any:
+def safe_get(lst, idx, default=None):
     try:
         return lst[idx] if 0 <= idx < len(lst) else default
     except Exception:
         return default
 
-# محرك التحليل
-def analyze_logic(lat: float, lon: float, beach_dir: str, weather: Dict, marine: Dict) -> Dict[str, Any]:
+def analyze_logic(lat, lon, beach_dir, weather, marine):
     now = datetime.now(timezone.utc)
     w_h = weather.get("hourly", {})
     m_h = marine.get("hourly", {})
@@ -91,12 +82,12 @@ def analyze_logic(lat: float, lon: float, beach_dir: str, weather: Dict, marine:
     sp = safe_get(m_h.get("swell_wave_period", []), idx, 8.0)
     wt = classify_wind(wd, beach_dir)
     
-    # فحص 24 ساعة للطحالب
     persistent = False
     for i in range(max(0, idx-24), idx):
         if i >= len(m_h.get("swell_wave_height", [])):
             break
-        if m_h["swell_wave_height"][i] > 2.0:            h_wd = safe_get(w_h.get("wind_direction_10m", []), i, 0)
+        if m_h["swell_wave_height"][i] > 2.0:
+            h_wd = safe_get(w_h.get("wind_direction_10m", []), i, 0)
             if classify_wind(h_wd, beach_dir) == "Onshore":
                 persistent = True
                 break
@@ -105,8 +96,7 @@ def analyze_logic(lat: float, lon: float, beach_dir: str, weather: Dict, marine:
         sw = "Confirmed/Persistent"
     elif sh < 0.4 or wt == "Offshore":
         sw = "None"
-    elif 0.4 <= sh <= 1.0 and wt == "Side-shore":
-        sw = "Low"
+    elif 0.4 <= sh <= 1.0 and wt == "Side-shore":        sw = "Low"
     elif 1.0 < sh <= 1.8 and wt == "Onshore":
         sw = "High"
     else:
@@ -116,7 +106,6 @@ def analyze_logic(lat: float, lon: float, beach_dir: str, weather: Dict, marine:
     rip = "Confirmed" if sp >= 14 and low_tide else ("High" if 10 <= sp < 14 else "Low")
     wr = "None" if ws < 10 else ("Low" if ws <= 25 else ("High" if ws <= 45 else "Confirmed"))
     
-    # مصفوفة النقاط
     score = sum({"None":10, "Low":5, "High":2}.get(r, -5) for r in [sw, rip, wr])
     if 0.5 <= sh <= 1.2:
         score += 10
@@ -128,7 +117,6 @@ def analyze_logic(lat: float, lon: float, beach_dir: str, weather: Dict, marine:
         score -= 10
     score = max(0, min(45, score))
     
-    # الحكم النهائي
     if score >= 35 and sw == "None" and wr in ["None","Low"] and rip in ["Low"]:
         verdict, expl = "ممتاز", "ظروف ممتازة: موج مناسب (0.5-1.2م)، رياح خفيفة، وانخفاض ضغط بطيء ينشط الأسماك."
     elif score >= 20 and "Confirmed" not in [sw, wr]:
@@ -145,20 +133,19 @@ def analyze_logic(lat: float, lon: float, beach_dir: str, weather: Dict, marine:
         "conditions": {
             "wind_speed_kmh": round(ws,1), "wind_type": wt,
             "swell_height_m": round(sh,2), "swell_period_s": round(sp,1),
-            "pressure_trend_hpa": round(trend,2), "is_low_tide": low_tide        },
+            "pressure_trend_hpa": round(trend,2), "is_low_tide": low_tide
+        },
         "risks": {"seaweed_debris": sw, "rip_currents": rip, "wind_danger": wr},
         "verdict": {"status": verdict, "score": score, "explanation": expl, "sinker_weight_g": sinker}
     }
 
-# نماذج Pydantic
 class AnalyzeReq(BaseModel):
     lat: float = Field(..., ge=-90, le=90)
     lon: float = Field(..., ge=-180, le=180)
     beach_direction: str = Field(..., pattern=r"^(N|NE|E|SE|S|SW|W|NW)$")
     @field_validator('beach_direction')
     @classmethod
-    def norm_dir(cls, v: str) -> str:
-        return v.strip().upper()
+    def norm_dir(cls, v):        return v.strip().upper()
 
 class SpotReq(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
@@ -167,10 +154,9 @@ class SpotReq(BaseModel):
     facing: str = Field(..., pattern=r"^(N|NE|E|SE|S|SW|W|NW)$")
     @field_validator('facing')
     @classmethod
-    def norm_face(cls, v: str) -> str:
+    def norm_face(cls, v):
         return v.strip().upper()
 
-# Endpoints
 @app.get("/")
 async def root():
     return {"status": "online", "service": "Tunisia Surfcasting Analyzer API", "version": "1.0.0"}
@@ -195,6 +181,7 @@ async def analyze(req: AnalyzeReq):
         result = analyze_logic(req.lat, req.lon, req.beach_direction, w_r.json(), m_r.json())
         result["name"] = "موقع محدد"
         return result
+
 @app.post("/best-spots")
 async def best_spots(custom: List[SpotReq]):
     spots = TUNISIAN_SPOTS + [{"name":s.name,"lat":s.lat,"lon":s.lon,"facing":s.facing,"region":"مفضل"} for s in custom]
@@ -207,8 +194,7 @@ async def best_spots(custom: List[SpotReq]):
                 w.raise_for_status()
                 m.raise_for_status()
                 r = analyze_logic(s["lat"], s["lon"], s["facing"], w.json(), m.json())
-                r["name"] = s["name"]
-                r["region"] = s.get("region","")
+                r["name"] = s["name"]                r["region"] = s.get("region","")
                 results.append(r)
                 await asyncio.sleep(0.2)
             except Exception as e:
