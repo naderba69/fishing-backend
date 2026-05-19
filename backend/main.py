@@ -8,14 +8,11 @@ from pydantic import BaseModel, Field, field_validator
 from typing import List, Dict, Any
 from datetime import datetime, timezone, timedelta
 
-# إعدادات التسجيل
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("surfcast-api")
 
-# تهيئة التطبيق
 app = FastAPI(title="Tunisia Surfcasting Analyzer API", version="1.0.0", docs_url="/docs")
 
-# إعدادات CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -26,7 +23,6 @@ app.add_middleware(
     max_age=3600
 )
 
-# قاعدة بيانات الشواطئ التونسية
 TUNISIAN_SPOTS: List[Dict[str, Any]] = [
     {"name": "قلعة الأندلس (تونس العاصمة)", "lat": 36.9150, "lon": 10.1550, "facing": "N"},
     {"name": "شاطئ رواد (تونس العاصمة)", "lat": 36.9380, "lon": 10.2150, "facing": "NE"},
@@ -47,13 +43,11 @@ def dir_to_deg(d: str) -> float:
 def classify_wind(wind_deg: float, beach_dir: str) -> str:
     diff = abs(wind_deg - dir_to_deg(beach_dir))
     if diff > 180.0:
-        diff = 360.0 - diff    
+        diff = 360.0 - diff
     if diff <= 45.0:
         return "Onshore"
-    elif diff >= 135.0:
-        return "Offshore"
-    else:
-        return "Side-shore"
+    if diff >= 135.0:
+        return "Offshore"    return "Side-shore"
 
 def is_low_tide_approx(utc_hour: int, lat: float) -> bool:
     offset = 3.0 if lat < 37.0 else 2.0
@@ -97,13 +91,12 @@ def analyze_logic(lat: float, lon: float, beach_dir: str, w_data: Dict, m_data: 
     sh = safe_get(m_h.get("swell_wave_height", []), idx, 0.8)
     sp = safe_get(m_h.get("swell_wave_period", []), idx, 8.0)
     wt = classify_wind(wd, beach_dir)
-    # منطق الطحالب (24 ساعة)
+
     persistent = False
     for i in range(max(0, idx-24), idx):
         if i >= len(m_h.get("swell_wave_height", [])):
             break
-        if m_h["swell_wave_height"][i] > 2.0:
-            h_wd = safe_get(w_h.get("wind_direction_10m", []), i, 0.0)
+        if m_h["swell_wave_height"][i] > 2.0:            h_wd = safe_get(w_h.get("wind_direction_10m", []), i, 0.0)
             if classify_wind(h_wd, beach_dir) == "Onshore":
                 persistent = True
                 break
@@ -146,13 +139,13 @@ def analyze_logic(lat: float, lon: float, beach_dir: str, w_data: Dict, m_data: 
     else:
         verdict = "مستحيل"
         explanation = "الظروف خطرة: أمواج عاتية جداً أو رياح عاتية أو مخلفات طحالب مؤكدة."
+
     sinker = int(min(300, max(30, 50 + sh*40 + ws*0.8 + (20 if wt=="Onshore" else 0) + (30 if rip=="High" else 0))))
 
     return {
         "location": {"lat": round(lat, 4), "lon": round(lon, 4), "facing": beach_dir},
         "conditions": {
-            "wind_speed_kmh": round(ws, 1), "wind_type": wt,
-            "swell_height_m": round(sh, 2), "swell_period_s": round(sp, 1),
+            "wind_speed_kmh": round(ws, 1), "wind_type": wt,            "swell_height_m": round(sh, 2), "swell_period_s": round(sp, 1),
             "pressure_trend_hpa": round(trend, 2), "is_low_tide": low_tide
         },
         "risks": {"seaweed_debris": sw, "rip_currents": rip, "wind_danger": wr},
@@ -194,14 +187,14 @@ async def analyze(req: AnalyzeReq):
         m_url = f"https://marine-api.open-meteo.com/v1/marine?latitude={req.lat}&longitude={req.lon}&hourly=swell_wave_height,swell_wave_period,swell_wave_direction&past_days=1&timezone=auto"
         try:
             w_r, m_r = await asyncio.gather(c.get(w_url), c.get(m_url))
-            w_r.raise_for_status()            m_r.raise_for_status()
+            w_r.raise_for_status()
+            m_r.raise_for_status()
         except Exception as e:
             logger.error(f"API error: {e}")
             raise HTTPException(502, f"Open-Meteo error: {str(e)}")
         result = analyze_logic(req.lat, req.lon, req.beach_direction, w_r.json(), m_r.json())
         result["name"] = "موقع محدد"
         return result
-
 @app.post("/best-spots")
 async def best_spots(custom: List[SpotReq]):
     spots = TUNISIAN_SPOTS + [{"name":s.name,"lat":s.lat,"lon":s.lon,"facing":s.facing,"region":"مفضل"} for s in custom]
