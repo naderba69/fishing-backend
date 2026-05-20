@@ -96,7 +96,8 @@ def classify_wind(wind_deg: float, beach_dir: str, region: str) -> str:
     if region == "نابل" and beach_dir in ["N","NE"]:
         return "Onshore" if diff <= 30 else ("Offshore" if diff >= 150 else "Side-shore")
     if region == "بنزرت" and beach_dir in ["N","NW"]:
-        return "Onshore" if diff <= 40 else ("Offshore" if diff >= 140 else "Side-shore")    return "Onshore" if diff <= 45 else ("Offshore" if diff >= 135 else "Side-shore")
+        return "Onshore" if diff <= 40 else ("Offshore" if diff >= 140 else "Side-shore")
+        return "Onshore" if diff <= 45 else ("Offshore" if diff >= 135 else "Side-shore")
 
 def get_moon_data(dt: datetime) -> dict:
     diff = dt - datetime(2000, 1, 6, 18, 14, tzinfo=timezone.utc)
