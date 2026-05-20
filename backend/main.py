@@ -146,7 +146,8 @@ def validate_api_data(w_h: dict, m_h: dict, min_len: int = 12) -> bool:
 
 def corrected_tide_window(utc_hour: int, region: str, pressure_hpa: float, wind_speed: float, wind_type: str, tide_amp: float) -> bool:
     base_offset = {"تونس":3.1, "نابل":3.3, "بنزرت":2.7, "سوسة":3.4}.get(region, 3.0)
-    p_corr = ((1013.0 - pressure_hpa) / 10.0) * 0.25    w_corr = min(1.0, (wind_speed - 20) / 30.0) if wind_type == "Onshore" and wind_speed > 20 else 0.0
+    p_corr = ((1013.0 - pressure_hpa) / 10.0) * 0.25
+    w_corr = min(1.0, (wind_speed - 20) / 30.0) if wind_type == "Onshore" and wind_speed > 20 else 0.0
     amp_corr = (tide_amp - 1.0) * 0.5
     phase = ((utc_hour - (base_offset + p_corr + w_corr + amp_corr)) % 12.42) / 12.42 * 360
     return phase < 35 or phase > 325
