@@ -245,7 +245,8 @@ def calculate_confidence(fc_hours: float, variance: float, stability: str) -> in
     rip = "Confirmed" if rip_sc>=4.5 else ("High" if rip_sc>=3.0 else ("Medium" if rip_sc>=2.0 else "Low"))
     wr = "None" if max_ws<10 else ("Low" if max_ws<=25 else ("High" if max_ws<=45 else "Confirmed"))
     
-    red_flags = []    if has_lightning: red_flags.append("⛈️ خطر صواعق/عواصف رعدية")
+    red_flags = []
+    if has_lightning: red_flags.append("⛈️ خطر صواعق/عواصف رعدية")
     if avg_eff > 1.4 and dom_wind == "Onshore" and avg_sp > 9.0: red_flags.append("سحب الرصاص للشاطئ")
     if max_sh > 1.8 and dom_wind == "Onshore": red_flags.append("خروج أعشاب وأوساخ")
     if max_ws > 38: red_flags.append("رياح تعيق الرمي والثبات")
