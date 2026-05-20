@@ -97,7 +97,7 @@ def topographic_correction(wind_deg: float, swell_deg: float, region: str, spot_
     elif region == "بنزرت" and any(k in spot_name for k in ["سيرات","مشرق","رأس","رمال","زبيب","جميل"]):
         if 340 <= w_corr or w_corr <= 40: w_corr = (w_corr + 15) % 360
         if 340 <= s_corr or s_corr <= 40: s_corr = (s_corr + 10) % 360
-        elif region == "سوسة":
+    elif region == "سوسة":
         if 90 <= s_corr <= 150: s_corr = (s_corr - 8) % 360
     return w_corr % 360, s_corr % 360
 
@@ -146,7 +146,8 @@ def smooth_series(series: list, max_jump_pct: float = 0.45) -> list:
         prev, curr, nxt = cleaned[i-1], cleaned[i], cleaned[i+1]
         if prev == 0: prev = 0.1
         if abs(curr - prev) / prev > max_jump_pct:
-            cleaned[i] = (prev + nxt) / 2    return [sorted(cleaned[max(0,i-1):min(len(cleaned),i+2)])[1] for i in range(len(cleaned))]
+            cleaned[i] = (prev + nxt) / 2
+            return [sorted(cleaned[max(0,i-1):min(len(cleaned),i+2)])[1] for i in range(len(cleaned))]
 
 def validate_api_data(w_h: dict, m_h: dict, min_len: int = 12) -> bool:
     """التحقق من اكتمال وتطابق مصفوفات API قبل أي حساب"""
@@ -244,7 +245,8 @@ def analyze_window(w_h: dict, m_h: dict, start_idx: int, end_idx: int, beach_dir
     sd_corr = [topographic_correction(w, s, region, spot_name, spot_info)[1] for w,s in zip(wd_raw,sd_raw)]
     
     beach_deg = dir_to_deg(beach_dir)
-    eff_sh = [h * max(0, math.cos(math.radians(angular_diff(d, beach_deg)))) for h,d in zip(sh,sd_corr)]    avg_eff = sum(eff_sh)/len(eff_sh) if eff_sh else avg_sh
+    eff_sh = [h * max(0, math.cos(math.radians(angular_diff(d, beach_deg)))) for h,d in zip(sh,sd_corr)]
+    avg_eff = sum(eff_sh)/len(eff_sh) if eff_sh else avg_sh
     
     wd_counts = {}
     for w in wd_corr:
@@ -340,9 +342,11 @@ class AnalyzeReq(BaseModel):
     delegation: str = Field(default="", max_length=30)
     @field_validator('beach_direction')
     @classmethod
-    def norm_dir(cls, v): return v.strip().upper()
+    def norm_dir(cls, v):
+        return v.strip().upper()
 
-class SpotReq(BaseModel):    name: str = Field(..., min_length=1, max_length=100)
+class SpotReq(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
     lat: float = Field(..., ge=-90, le=90)
     lon: float = Field(..., ge=-180, le=180)
     facing: str = Field(..., pattern=r"^(N|NNE|NE|ENE|E|ESE|SE|SSE|S|SSW|SW|WSW|W|WNW|NW|NNW)$")
@@ -391,7 +395,8 @@ async def analyze(req: AnalyzeReq):
         now_idx = min(range(len(times)), key=lambda i: abs(datetime.fromisoformat(times[i].replace("Z","+00:00")) - now_utc)) if times else 0
         
         moon = get_moon_data(now_utc)
-        morning = analyze_window(w_h, m_h, now_idx, min(now_idx+6, len(times)), req.beach_direction, req.region, req.delegation, req.lat, moon)        evening = analyze_window(w_h, m_h, min(now_idx+10, len(times)-6), min(now_idx+16, len(times)), req.beach_direction, req.region, req.delegation, req.lat, moon)
+        morning = analyze_window(w_h, m_h, now_idx, min(now_idx+6, len(times)), req.beach_direction, req.region, req.delegation, req.lat, moon)
+        evening = analyze_window(w_h, m_h, min(now_idx+10, len(times)-6), min(now_idx+16, len(times)), req.beach_direction, req.region, req.delegation, req.lat, moon)
         night = analyze_window(w_h, m_h, min(now_idx+16, len(times)-6), min(now_idx+22, len(times)), req.beach_direction, req.region, req.delegation, req.lat, moon)
         
         water_temp = safe_get(m_h.get("sea_surface_temperature",[]), now_idx, 18.0)
@@ -440,7 +445,8 @@ async def best_spots(custom: List[SpotReq]):
     raw_results = await asyncio.gather(*tasks)
     results = [r for r in raw_results if r is not None]
     
-    results.sort(key=lambda x: sum({"ممتاز":30,"جيد":20,"صعب":10}.get(x["verdict"],0) for x in [x]), reverse=True)    for i,r in enumerate(results,1): r["rank"]=i
+    results.sort(key=lambda x: sum({"ممتاز":30,"جيد":20,"صعب":10}.get(x["verdict"],0) for x in [x]), reverse=True)
+    for i,r in enumerate(results,1): r["rank"]=i
     return results
 
 @app.exception_handler(HTTPException)
