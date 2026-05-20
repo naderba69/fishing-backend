@@ -394,7 +394,8 @@ async def best_spots(custom: List[SpotReq]):
                 w_h, m_h = w.json().get("hourly",{}), m.json().get("hourly",{})
                 times = w_h.get("time",[])
                 now_idx = min(range(len(times)), key=lambda i: abs(datetime.fromisoformat(times[i].replace("Z","+00:00")) - datetime.now(timezone.utc))) if times else 0
-                moon = get_moon_data(datetime.now(timezone.utc))                res = analyze_window(w_h, m_h, now_idx, min(now_idx+8, len(times)), s["facing"], s["region"], s["name"], s["lat"], moon)
+                moon = get_moon_data(datetime.now(timezone.utc))
+                res = analyze_window(w_h, m_h, now_idx, min(now_idx+8, len(times)), s["facing"], s["region"], s["name"], s["lat"], moon)
                 if res:
                     res["name"] = s["name"]; res["region"] = s["region"]; res["delegation"] = s.get("delegation","")
                     return res
