@@ -344,7 +344,8 @@ async def analyze(req: AnalyzeReq):
     async with httpx.AsyncClient(timeout=20) as c:
         w_url = f"https://api.open-meteo.com/v1/forecast?latitude={req.lat}&longitude={req.lon}&hourly=wind_speed_10m,wind_direction_10m,surface_pressure,precipitation,weather_code,visibility&past_days=2&forecast_days=2&timezone=auto"
         m_url = f"https://marine-api.open-meteo.com/v1/marine?latitude={req.lat}&longitude={req.lon}&hourly=swell_wave_height,swell_wave_period,swell_wave_direction,sea_surface_temperature&past_days=2&forecast_days=2&timezone=auto"
-        try:            w_r, m_r = await asyncio.gather(c.get(w_url), c.get(m_url))
+        try:
+            w_r, m_r = await asyncio.gather(c.get(w_url), c.get(m_url))
             w_r.raise_for_status(); m_r.raise_for_status()
         except Exception as e:
             raise HTTPException(502, f"Open-Meteo error: {str(e)}")
