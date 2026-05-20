@@ -148,24 +148,58 @@
     async function analyzeSelection(){
       if(!currentSpot)return alert("⚠️ اختر موقعاً أولاً.");
       const load=document.getElementById('loading'),res=document.getElementById('results');
+      load.textContent = "⏳ جاري إيقاظ الخادم وتحليل البيانات... (قد يستغرق 30-50 ثانية في أول مرة)";
       load.classList.add('active');res.classList.add('hidden');
-      try{
-        const r=await fetch(`${API_BASE}/analyze`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lat:currentSpot.lat,lon:currentSpot.lon,beach_direction:currentDir,region:currentRegion,delegation:currentDelegation})});
-        if(!r.ok)throw new Error(`HTTP ${r.status}`);
-        currentData=await r.json();
-        cacheAnalysis(currentData);
-        renderPro(currentData);
-      }catch(e){
+      
+      let attempts = 0;
+      const maxAttempts = 3;
+      let success = false;
+      
+      while(attempts < maxAttempts && !success){
+        attempts++;
+        try{
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 45000);
+          
+          const r = await fetch(`${API_BASE}/analyze`, {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+              lat:currentSpot.lat,
+              lon:currentSpot.lon,
+              beach_direction:currentDir,
+              region:currentRegion,
+              delegation:currentDelegation
+            }),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          
+          if(!r.ok) throw new Error(`HTTP ${r.status}`);
+          currentData = await r.json();
+          cacheAnalysis(currentData);
+          renderPro(currentData);
+          success = true;
+        } catch(e) {
+          console.warn(`المحاولة ${attempts} فشلت: ${e.message}`);
+          if(attempts < maxAttempts){
+            load.textContent = `⏳ الخادم نائم أو الشبكة بطيئة... إعادة المحاولة ${attempts+1}/${maxAttempts}`;
+            await new Promise(r => setTimeout(r, 5000));
+          }
+        }
+      }
+      
+      if(!success){
         const fallback=getCachedAnalysis();
         if(fallback){
           currentData=fallback;
           renderPro(currentData);
-          document.getElementById('migrationAdvice').textContent="⚠️ تعذر الاتصال بالخادم. عرض آخر تحليل ناجح (مؤرشف).";
-          document.getElementById('migrationAdvice').classList.remove('hidden');
-        }else{
-          alert(`❌ فشل الاتصال ولا توجد بيانات مؤرشفة: ${e.message}`);
+          document.getElementById('migrationAdvice').textContent="⚠️ تعذر الاتصال بالخادم بعد 3 محاولات. تم عرض آخر تحليل مؤرشف.";          document.getElementById('migrationAdvice').classList.remove('hidden');
+        } else {
+          alert(`❌ فشل الاتصال النهائي: تأكد من أن الباكند يعمل على Render، أو انتظر دقيقة ثم حاول مجدداً.`);
         }
-      }finally{load.classList.remove('active');}
+      }
+      load.classList.remove('active');
     }
 
     function renderPro(data){
@@ -194,7 +228,8 @@
       document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
       document.querySelector(`.tab[onclick="showWindow('${period}')"]`).classList.add('active');
       const w=currentData.windows[period];
-      const cont=document.getElementById('windowContent');      if(!w){cont.innerHTML='<div style="text-align:center;color:#94a3b8;padding:20px;">لا تتوفر بيانات كافية لهذه الفترة</div>';return;}
+      const cont=document.getElementById('windowContent');
+      if(!w){cont.innerHTML='<div style="text-align:center;color:#94a3b8;padding:20px;">لا تتوفر بيانات كافية لهذه الفترة</div>';return;}
       const vColor=w.verdict.includes("ممتاز")?"#10b981":w.verdict.includes("جيد")?"#eab308":w.verdict.includes("صعب")?"#f97316":w.verdict.includes("أحمر")||w.verdict.includes("خطر")?"#ef4444":"#94a3b8";
       const rColor=(r)=>r==="None"?"#10b981":r==="Low"?"#eab308":r==="Medium"?"#f97316":"#ef4444";
       let redHtml="";
@@ -208,8 +243,7 @@
           <div class="w-stats">
             <div class="stat">💨 رياح: <span>${w.avg_wind} كم/س (عظمى ${w.max_wind})</span></div>
             <div class="stat">🌊 موج فعّال: <span>${w.effective_swell}م (عظمى ${w.max_swell})</span></div>
-            <div class="stat">⏱️ فترة الموج: <span>${w.avg_period} ث</span></div>
-            <div class="stat">📉 ضغط/اتجاه: <span>${w.pressure_now} hPa (${w.pressure_trend>0?'↑':'↓'} ${w.pressure_trend})</span></div>
+            <div class="stat">⏱️ فترة الموج: <span>${w.avg_period} ث</span></div>            <div class="stat">📉 ضغط/اتجاه: <span>${w.pressure_now} hPa (${w.pressure_trend>0?'↑':'↓'} ${w.pressure_trend})</span></div>
           </div>
           <div class="risks">
             <div class="risk" style="background:${rColor(w.risks.seaweed)}20;color:${rColor(w.risks.seaweed)}">🌿 طحالب: ${w.risks.seaweed}</div>
@@ -243,7 +277,8 @@
           <div class="audit-item"><strong>أولوية السلامة:</strong> ${d.safety_priority}</div>
           <div class="audit-item"><strong>نموذج المد:</strong> ${d.tide_model}</div>
           <div class="audit-item"><strong>معايرة الرياح:</strong> ${d.wind_shift_calibration}</div>
-        `;      }catch(e){console.warn("Audit fetch failed",e);}
+        `;
+      }catch(e){console.warn("Audit fetch failed",e);}
     }
 
     function saveToFavorites(){
@@ -258,7 +293,6 @@
         alert("✅ تم الحفظ بنجاح!");
       }
     }
-
     // تهيئة أولية
     fetchAudit();
   </script>
