@@ -10,13 +10,13 @@ from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timezone, timedelta
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger("surfcast-audit-v7")
+logger = logging.getLogger("surfcast-v7.2")
 
-app = FastAPI(title="Tunisia Surfcasting Reference API", version="7.1.0", docs_url="/docs")
+app = FastAPI(title="Tunisia Surfcasting Reference API", version="7.2.0", docs_url="/docs")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # ==========================================
-# 📍 قاعدة بيانات مرجعية مدققة (إحداثيات ±11م)
+# 📍 قاعدة بيانات مرجعية مدققة (42 موقعاً)
 # ==========================================
 TUNISIAN_SPOTS = [
     # تونس العاصمة (8)
@@ -29,7 +29,7 @@ TUNISIAN_SPOTS = [
     {"name": "رادس الشاطئ", "lat": 36.7650, "lon": 10.2850, "facing": "SE", "region": "تونس", "delegation": "رادس", "local_wind_shift_deg": +6.0},
     {"name": "برج السدرية", "lat": 36.7150, "lon": 10.3100, "facing": "E", "region": "تونس", "delegation": "حمام الأنف", "local_wind_shift_deg": +7.0},
 
-    # نابل / كاب بون (14) - انكسار جبل عبد الرحمن والرؤوس
+    # نابل (14)
     {"name": "الهوارية الرأس", "lat": 37.0500, "lon": 11.0150, "facing": "N", "region": "نابل", "delegation": "الهوارية", "local_wind_shift_deg": -8.0},
     {"name": "سيدي داود", "lat": 36.9850, "lon": 10.9850, "facing": "NW", "region": "نابل", "delegation": "الهوارية", "local_wind_shift_deg": -15.0},
     {"name": "الرتيبة", "lat": 36.9650, "lon": 11.0450, "facing": "N", "region": "نابل", "delegation": "قليبية", "local_wind_shift_deg": -10.0},
@@ -45,7 +45,7 @@ TUNISIAN_SPOTS = [
     {"name": "نابل المدينة", "lat": 36.4550, "lon": 10.7350, "facing": "E", "region": "نابل", "delegation": "نابل", "local_wind_shift_deg": +9.0},
     {"name": "الميدون", "lat": 36.4250, "lon": 10.6850, "facing": "E", "region": "نابل", "delegation": "نابل", "local_wind_shift_deg": +7.0},
 
-    # بنزرت (10) - تأثير القناة والرؤوس الشمالية
+    # بنزرت (10)
     {"name": "كاب سيرات", "lat": 37.2300, "lon": 9.2100, "facing": "NW", "region": "بنزرت", "delegation": "غار الملح", "local_wind_shift_deg": -14.0},
     {"name": "سيدي مشرق", "lat": 37.1600, "lon": 9.1200, "facing": "N", "region": "بنزرت", "delegation": "غار الملح", "local_wind_shift_deg": -10.0},    {"name": "الرمال بنزرت", "lat": 37.2750, "lon": 9.9150, "facing": "NW", "region": "بنزرت", "delegation": "بنزرت الشمالية", "local_wind_shift_deg": -12.0},
     {"name": "رأس الأنف (كاب بلانك)", "lat": 37.3450, "lon": 9.7350, "facing": "N", "region": "بنزرت", "delegation": "بنزرت الشمالية", "local_wind_shift_deg": -18.0},
@@ -56,7 +56,7 @@ TUNISIAN_SPOTS = [
     {"name": "ماطر الساحل", "lat": 37.0850, "lon": 9.9850, "facing": "NE", "region": "بنزرت", "delegation": "ماطر", "local_wind_shift_deg": +10.0},
     {"name": "بنزرت المدينة", "lat": 37.2700, "lon": 9.8700, "facing": "NE", "region": "بنزرت", "delegation": "بنزرت الجنوبية", "local_wind_shift_deg": +14.0},
 
-    # سوسة والساحل (10) - انحناء ساحلي مفتوح
+    # سوسة (10)
     {"name": "شط مريم", "lat": 35.9350, "lon": 10.5600, "facing": "E", "region": "سوسة", "delegation": "أكودة", "local_wind_shift_deg": +7.0},
     {"name": "هرقلة", "lat": 36.0300, "lon": 10.5100, "facing": "NE", "region": "سوسة", "delegation": "هرقلة", "local_wind_shift_deg": +9.0},
     {"name": "أكودة", "lat": 35.9850, "lon": 10.5350, "facing": "E", "region": "سوسة", "delegation": "أكودة", "local_wind_shift_deg": +8.0},
@@ -70,23 +70,20 @@ TUNISIAN_SPOTS = [
 ]
 
 # ==========================================
-# 🧮 دوال أساسية وهندسية (موثقة رياضياً)
+# 🧮 دوال أساسية وهندسية
 # ==========================================
 def dir_to_deg(d: str) -> float:
-    """تحويل اتجاه البوصلة إلى درجات (0-360)"""
     m = {"N":0,"NNE":22.5,"NE":45,"ENE":67.5,"E":90,"ESE":112.5,"SE":135,"SSE":157.5,"S":180,"SSW":202.5,"SW":225,"WSW":247.5,"W":270,"WNW":292.5,"NW":315,"NNW":337.5}
     return m.get(d.strip().upper(), 0.0)
 
 def angular_diff(a: float, b: float) -> float:
-    """الفرق الزاوي الدائري الصحيح (0-180)"""
     d = abs(a - b) % 360
     return d if d <= 180 else 360 - d
 
 def topographic_correction(wind_deg: float, swell_deg: float, region: str, spot_name: str, spot_data: dict = None) -> Tuple[float, float]:
-    """تصحيح اتجاه الرياح والموج: انحراف محلي + إقليمي"""
     local_shift = spot_data.get("local_wind_shift_deg", 0.0) if spot_data else 0.0
     w_corr = (wind_deg + local_shift) % 360
-    s_corr = (swell_deg + local_shift * 0.6) % 360  # الموج ينكسر بنسبة أقل من الريح
+    s_corr = (swell_deg + local_shift * 0.6) % 360
     
     if region == "نابل" and any(k in spot_name for k in ["هوارية","قليبية","سيدي داود","بني خيار","رتيبة","ميدة"]):
         if 270 <= w_corr <= 330: w_corr = (w_corr + 15) % 360
@@ -99,10 +96,9 @@ def topographic_correction(wind_deg: float, swell_deg: float, region: str, spot_
         if 340 <= s_corr or s_corr <= 40: s_corr = (s_corr + 10) % 360
     elif region == "سوسة":
         if 90 <= s_corr <= 150: s_corr = (s_corr - 8) % 360
-    return w_corr % 360, s_corr % 360
+        return w_corr % 360, s_corr % 360
 
 def classify_wind(wind_deg: float, beach_dir: str, region: str) -> str:
-    """تصنيف الرياح نسبة للشاطئ مع عتبات إقليمية"""
     diff = angular_diff(wind_deg, dir_to_deg(beach_dir))
     if region == "نابل" and beach_dir in ["N","NE"]:
         return "Onshore" if diff <= 30 else ("Offshore" if diff >= 150 else "Side-shore")
@@ -111,7 +107,6 @@ def classify_wind(wind_deg: float, beach_dir: str, region: str) -> str:
     return "Onshore" if diff <= 45 else ("Offshore" if diff >= 135 else "Side-shore")
 
 def get_moon_data(dt: datetime) -> dict:
-    """طور القمر + مضاعف النشاط + سعة المد (مرجع فلكي 2000-01-06 محاق)"""
     diff = dt - datetime(2000, 1, 6, 18, 14, tzinfo=timezone.utc)
     days = diff.total_seconds() / 86400
     phase = (days % 29.53058867) / 29.53058867
@@ -128,7 +123,6 @@ def get_moon_data(dt: datetime) -> dict:
     return {"name": name, "icon": icon, "phase": round(phase, 3), "activity_boost": activity, "tide_amplitude": tide_amp}
 
 def safe_get(lst: list, i: int, default: Any = None) -> Any:
-    """جلب آمن مع معالجة None/IndexError"""
     try:
         val = lst[i] if 0 <= i < len(lst) else default
         return default if val is None else val
@@ -139,7 +133,6 @@ def safe_get(lst: list, i: int, default: Any = None) -> Any:
 # 🔬 جودة البيانات والفيزياء البحرية
 # ==========================================
 def smooth_series(series: list, max_jump_pct: float = 0.45) -> list:
-    """تنعيم + إزالة قفزات نموذجية (Moving Median + Spike Clamp)"""
     if not series or len(series) < 3: return [x for x in series if x is not None] or [0.0]
     cleaned = [x if x is not None else 0.0 for x in series]
     for i in range(1, len(cleaned)-1):
@@ -147,10 +140,9 @@ def smooth_series(series: list, max_jump_pct: float = 0.45) -> list:
         if prev == 0: prev = 0.1
         if abs(curr - prev) / prev > max_jump_pct:
             cleaned[i] = (prev + nxt) / 2
-            return [sorted(cleaned[max(0,i-1):min(len(cleaned),i+2)])[1] for i in range(len(cleaned))]
+    return [sorted(cleaned[max(0,i-1):min(len(cleaned),i+2)])[1] for i in range(len(cleaned))]
 
 def validate_api_data(w_h: dict, m_h: dict, min_len: int = 12) -> bool:
-    """التحقق من اكتمال وتطابق مصفوفات API قبل أي حساب"""
     w_t, m_t = w_h.get("time", []), m_h.get("time", [])
     if len(w_t) < min_len or len(m_t) < min_len: return False
     for k in ["wind_speed_10m","wind_direction_10m","surface_pressure","precipitation","weather_code"]:
@@ -160,7 +152,6 @@ def validate_api_data(w_h: dict, m_h: dict, min_len: int = 12) -> bool:
     return True
 
 def corrected_tide_window(utc_hour: int, region: str, pressure_hpa: float, wind_speed: float, wind_type: str, tide_amp: float) -> bool:
-    """نموذج مد مصحح: إزاحة إقليمية + ضغط + رياح + سعة قمرية"""
     base_offset = {"تونس":3.1, "نابل":3.3, "بنزرت":2.7, "سوسة":3.4}.get(region, 3.0)
     p_corr = ((1013.0 - pressure_hpa) / 10.0) * 0.25
     w_corr = min(1.0, (wind_speed - 20) / 30.0) if wind_type == "Onshore" and wind_speed > 20 else 0.0
@@ -169,7 +160,6 @@ def corrected_tide_window(utc_hour: int, region: str, pressure_hpa: float, wind_
     return phase < 35 or phase > 325
 
 def calculate_debris_energy(w_h: dict, m_h: dict, start_idx: int, end_idx: int, beach_dir: str, region: str) -> Tuple[str, float]:
-    """طاقة الحطام التراكمية: رياح بحرية × موج × ساعات (48س)"""
     if start_idx >= end_idx: return "Low", 0.0
     wd, ws, sh = w_h.get("wind_direction_10m",[])[start_idx:end_idx], w_h.get("wind_speed_10m",[])[start_idx:end_idx], m_h.get("swell_wave_height",[])[start_idx:end_idx]
     energy, hours = 0.0, 0
@@ -182,7 +172,6 @@ def calculate_debris_energy(w_h: dict, m_h: dict, start_idx: int, end_idx: int, 
     return "None", energy
 
 def calculate_rain_turbidity(precip: list) -> Tuple[str, float]:
-    """خطر تعكر الماء بسبب الأمطار والجريان"""
     if not precip: return "None", 0.0
     acc = sum(x for x in precip if x is not None)
     if acc > 25: return "Confirmed", acc
@@ -191,25 +180,22 @@ def calculate_rain_turbidity(precip: list) -> Tuple[str, float]:
     return "None", acc
 
 def assess_sea_confusion(wind_dir: float, swell_dir: float, wind_spd: float, swell_h: float) -> dict:
-    """تقييم البحر المتقاطع (Cross-Swell / Choppy)"""
     diff = angular_diff(wind_dir, swell_dir)
     is_cross = diff > 60
     is_choppy = wind_spd > 22 and swell_h < 1.0
     level = "High" if is_cross and swell_h > 0.8 else ("Medium" if is_choppy else ("Low" if is_cross else "None"))
     return {"level": level, "angle_diff": round(diff, 1), "is_cross": is_cross}
+
 def check_thunderstorm_risk(weather_codes: list) -> bool:
-    """كشف العواصف الرعدية والصواعق (WMO 4677)"""
     if not weather_codes: return False
     return any(code in [95, 96, 99] for code in weather_codes if code is not None)
 
 def adjust_for_sst(temp_c: float, verdict: str, expl: str) -> Tuple[str, str]:
-    """تعديل الحكم بدرجة حرارة الماء الفعلية"""
     if temp_c < 14.0: return "صعب", expl + " ⚠️ ماء بارد (<14°): خمول أسماك واضح."
     if temp_c > 26.5: return "صعب", expl + " ⚠️ ماء دافئ (>26.5°): هجرة للعمق أو نشاط ليلي فقط."
     return verdict, expl
 
 def calculate_confidence(fc_hours: float, variance: float, stability: str) -> int:
-    """ثقة إحصائية: عمر التنبؤ + تباين البيانات + استقرار النموذج"""
     decay = math.exp(-fc_hours / 18.0)
     penalty = min(0.4, variance * 0.15)
     bonus = 0.0 if stability == "متقلب" else 0.1
@@ -259,7 +245,6 @@ def analyze_window(w_h: dict, m_h: dict, start_idx: int, end_idx: int, beach_dir
     confusion = assess_sea_confusion(sum(wd_corr)/len(wd_corr), sum(sd_corr)/len(sd_corr), avg_ws, avg_sh)
     sst = safe_get(m_h.get("sea_surface_temperature",[]), start_idx, 18.0)
     has_lightning = check_thunderstorm_risk(w_codes)
-    
     mid_t = w_h.get("time",[])[(start_idx+end_idx)//2] if (start_idx+end_idx)//2 < len(w_h.get("time",[])) else ""
     utc_h = datetime.fromisoformat(mid_t.replace("Z","+00:00")).hour if mid_t else 12
     low_tide = corrected_tide_window(utc_h, region, p_now, avg_ws, dom_wind, moon["tide_amplitude"])
@@ -295,7 +280,8 @@ def analyze_window(w_h: dict, m_h: dict, start_idx: int, end_idx: int, beach_dir
     data_variance = (ws_var/10.0 + sh_var/1.0) / 2.0
     stability = "مستقر" if data_variance < 0.8 else "متقلب"
     
-    if safety_veto:        v, e = "🚫 خطر/ممنوع", "ظروف تهدد السلامة: صواعق أو رياح عاتية أو تيارات قاتلة. الانسحاب الفوري مطلوب."
+    if safety_veto:
+        v, e = "🚫 خطر/ممنوع", "ظروف تهدد السلامة: صواعق أو رياح عاتية أو تيارات قاتلة. الانسحاب الفوري مطلوب."
     elif is_red:
         v, e = "🚩 علم أحمر", f"غير قابل للصيد: {'، '.join(red_flags)}. غيّر الشاطئ فوراً."
     elif score >= 28 and debris_risk=="None" and wr in ["None","Low"]:
@@ -308,7 +294,6 @@ def analyze_window(w_h: dict, m_h: dict, start_idx: int, end_idx: int, beach_dir
         v, e = "غير مناسب", "ظروف قاسية أو غير مستقرة. يُنصح بالتأجيل."
     
     v, e = adjust_for_sst(sst, v, e)
-    
     fc_hours = max(0, (datetime.fromisoformat(mid_t.replace("Z","+00:00")) - datetime.now(timezone.utc)).total_seconds()/3600) if mid_t else 0
     confidence = calculate_confidence(fc_hours, data_variance, stability)
     if confidence < 60 or data_variance > 1.2:
@@ -342,8 +327,7 @@ class AnalyzeReq(BaseModel):
     delegation: str = Field(default="", max_length=30)
     @field_validator('beach_direction')
     @classmethod
-    def norm_dir(cls, v):
-        return v.strip().upper()
+    def norm_dir(cls, v): return v.strip().upper()
 
 class SpotReq(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
@@ -357,7 +341,7 @@ class SpotReq(BaseModel):
     def norm_face(cls, v): return v.strip().upper()
 
 @app.get("/")
-async def root(): return {"service":"Tunisia Surfcasting Reference API","version":"7.1.0","status":"online","spots":len(TUNISIAN_SPOTS),"micro_climate_correction":True}
+async def root(): return {"service":"Tunisia Surfcasting Reference API","version":"7.2.0","status":"online","spots":len(TUNISIAN_SPOTS),"micro_climate_correction":True}
 
 @app.get("/health")
 async def health(req: Request): return JSONResponse({"healthy":True,"ts":datetime.now(timezone.utc).isoformat()})
@@ -379,7 +363,7 @@ async def audit_info():
 
 @app.post("/analyze")
 async def analyze(req: AnalyzeReq):
-    logger.info(f"Ref Analyze v7.1: {req.lat},{req.lon},{req.region}/{req.delegation}")
+    logger.info(f"Ref Analyze v7.2: {req.lat},{req.lon},{req.region}/{req.delegation}")
     async with httpx.AsyncClient(timeout=20) as c:
         w_url = f"https://api.open-meteo.com/v1/forecast?latitude={req.lat}&longitude={req.lon}&hourly=wind_speed_10m,wind_direction_10m,surface_pressure,precipitation,weather_code,visibility&past_days=2&forecast_days=2&timezone=auto"
         m_url = f"https://marine-api.open-meteo.com/v1/marine?latitude={req.lat}&longitude={req.lon}&hourly=swell_wave_height,swell_wave_period,swell_wave_direction,sea_surface_temperature&past_days=2&forecast_days=2&timezone=auto"
@@ -409,8 +393,7 @@ async def analyze(req: AnalyzeReq):
             "astronomy": {"moon": moon, "water_temp_c": round(water_temp,1)},
             "best_window": best_window, "migration_advice": migration_advice,
             "windows": {"morning": morning, "evening": evening, "night": night},
-            "pro_tips": [
-                f"نشاط الأسماك مضاعف بـ {moon['activity_boost']}x بسبب طور القمر",
+            "pro_tips": [                f"نشاط الأسماك مضاعف بـ {moon['activity_boost']}x بسبب طور القمر",
                 "استخدم خيطاً أرفع (0.30-0.35mm) إذا كانت الرؤية > 10كم والماء صافٍ",
                 "عند ظهور علم أحمر أو خطر صواعق، لا تضيع الوقت: غيّر الواجهة أو انسحب فوراً",
                 "الاتجاهات مُصححة طبوغرافياً محلياً، والثقة الإحصائية تحمي من المفاجآت"
