@@ -1,138 +1,266 @@
-<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>🎣 مرشد الصيد الاحترافي - تونس</title><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><style>:root{--bg:#0b0e14;--card:#151922;--border:#252b3b;--text:#e2e8f0;--sub:#94a3b8;--accent:#3b82f6;--green:#10b981;--yellow:#eab308;--orange:#f97316;--red:#ef4444;--font:system-ui,-apple-system,'Segoe UI','Noto Sans Arabic',sans-serif}*{box-sizing:border-box;margin:0;padding:0}body{background:var(--bg);color:var(--text);font-family:var(--font);padding:12px;padding-bottom:40px;line-height:1.5}.container{max-width:680px;margin:0 auto}header{text-align:center;margin-bottom:16px;padding:16px;background:var(--card);border-radius:16px;border:1px solid var(--border)}header h1{font-size:1.3rem;margin-bottom:4px;color:var(--accent)}header p{font-size:0.85rem;color:var(--sub)}#map{height:35vh;border-radius:14px;border:1px solid var(--border);margin-bottom:16px;z-index:10;background:#1a202c}.controls{display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:16px}select,button{background:var(--card);color:var(--text);border:1px solid var(--border);padding:12px;border-radius:10px;font-size:0.95rem;cursor:pointer;transition:all 0.2s;font-family:inherit}button{background:var(--accent);color:#fff;border:none;font-weight:600}button:active{transform:scale(0.98)}.loading{text-align:center;color:var(--sub);padding:14px;font-size:0.9rem;display:none}.loading.active{display:block}.meta-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}.meta-box{background:var(--card);padding:12px;border-radius:10px;text-align:center;border:1px solid var(--border)}.meta-label{font-size:0.75rem;color:var(--sub);margin-bottom:4px}.meta-val{font-size:1.1rem;font-weight:700}.conf-meter{height:6px;background:#1e293b;border-radius:3px;margin-top:6px;overflow:hidden}.conf-fill{height:100%;transition:width 0.5s}.tabs{display:flex;gap:8px;margin-bottom:12px}.tab{flex:1;padding:10px;background:#1e293b;border:1px solid var(--border);border-radius:10px;text-align:center;cursor:pointer;transition:0.2s;font-weight:600}.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}.window-card{background:var(--card);padding:16px;border-radius:14px;border:1px solid var(--border);margin-bottom:12px;position:relative}.w-title{font-size:1.1rem;font-weight:700;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}.w-verdict{font-size:1.4rem;font-weight:800;margin-bottom:6px}.w-text{font-size:0.9rem;color:var(--sub);margin-bottom:12px;line-height:1.5}.w-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}.stat{background:#1e293b;padding:8px;border-radius:8px;font-size:0.85rem}.stat span{color:var(--accent);font-weight:700}.risks{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}.risk{flex:1;min-width:80px;padding:6px;border-radius:6px;text-align:center;font-size:0.8rem;font-weight:600}.sinker{background:#1e293b;padding:8px 12px;border-radius:8px;display:inline-block;font-weight:700;color:var(--accent);border:1px solid #334155;margin-bottom:8px}.red-flag-box{background:#451a1a;border:1px solid var(--red);padding:10px;border-radius:8px;margin-bottom:12px;color:#fca5a5;font-weight:600;font-size:0.9rem;animation:pulse 2s infinite}.migration-box{background:#1e293b;border-right:3px solid var(--orange);padding:10px;border-radius:8px;margin-top:12px;color:var(--yellow);font-size:0.9rem}.tips{background:#1e293b;padding:12px;border-radius:10px;margin-top:12px;border-right:3px solid var(--accent)}.tips li{margin-bottom:6px;font-size:0.9rem;color:var(--sub)}.meta-foot{font-size:0.75rem;color:#64748b;margin-top:6px;display:flex;justify-content:space-between}.hidden{display:none}@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)}70%{box-shadow:0 0 0 6px rgba(239,68,68,0)}100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}}.leaflet-popup-content-wrapper{background:#1e293b;color:#e2e8f0;border-radius:10px}.leaflet-popup-tip{background:#1e293b}</style></head><body><div class="container"><header><h1>🎣 مرشد الصيد الاحترافي تونس</h1><p>تحليل زمني، فيزيائي، وفلكي متكامل مع نظام الأعلام الحمراء 🚩</p></header><div id="map"></div><div class="controls"><select id="spotSelector"><option value="">📍 اختر شاطئاً أو اضغط على الخريطة</option><option value="predefined">الشواطئ المبرمجة</option><option value="favorites">❤️ المفضلات المحفوظة</option></select><button onclick="analyzeSelection()">تحليل احترافي</button></div><div id="loading" class="loading">⏳ جاري تحليل 48 ساعة من البيانات الحية...</div><div id="results" class="hidden"><div class="meta-grid"><div class="meta-box"><div class="meta-label">طور القمر</div><div class="meta-val" id="mMoon">--</div></div><div class="meta-box"><div class="meta-label">حرارة الماء</div><div class="meta-val" id="mTemp">--°C</div></div><div class="meta-box"><div class="meta-label">ثقة التحليل</div><div class="meta-val" id="mConf">--%</div><div class="conf-meter"><div class="conf-fill" id="confFill"></div></div></div><div class="meta-box"><div class="meta-label">تباين البيانات</div><div class="meta-val" id="mVar">--</div></div></div><div id="migrationAdvice" class="migration-box hidden"></div><div class="tabs"><div class="tab active" onclick="showWindow('morning')">🌅 الصباحية</div><div class="tab" onclick="showWindow('evening')">🌇 المسائية</div><div class="tab" onclick="showWindow('night')">🌙 الليلية</div></div><div id="windowContent"></div><div class="tips" id="proTips" style="display:none"><strong>💡 نصائح المرشد المحترف:</strong><ul id="tipsList"></ul></div></div></div><script>
-const API_BASE = "https://fishing-backend-by6c.onrender.com";
-const map = L.map('map',{zoomControl:false}).setView([36.8,10.2],8);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);
-L.control.zoom({position:'bottomright'}).addTo(map);
-
-let currentSpot=null, currentDir='N', currentRegion='تونس', currentDelegation='', currentData=null;
-let favorites=JSON.parse(localStorage.getItem('surf_pro_fav')||'[]');
-let markers={};
-
-const PREDEF=[
-  {n:"قلعة الأندلس (تونس)",lat:36.9150,lon:10.1550,d:"N",r:"تونس",del:"حلق الوادي"},
-  {n:"شاطئ رواد (تونس)",lat:36.9380,lon:10.2150,d:"NE",r:"تونس",del:"رواد"},
-  {n:"الهوارية (نابل)",lat:37.0500,lon:11.0150,d:"N",r:"نابل",del:"الهوارية"},
-  {n:"قليبية (نابل)",lat:36.8500,lon:11.1000,d:"E",r:"نابل",del:"قليبية"},
-  {n:"كاب سيرات (بنزرت)",lat:37.2300,lon:9.2100,d:"NW",r:"بنزرت",del:"غار الملح"},
-  {n:"شط مريم (سوسة)",lat:35.9350,lon:10.5600,d:"E",r:"سوسة",del:"أكودة"},
-  {n:"هرقلة (سوسة)",lat:36.0300,lon:10.5100,d:"NE",r:"سوسة",del:"هرقلة"}
-];
-
-function addMarker(lat,lon,title,color){
-  const k=lat.toFixed(4)+'_'+lon.toFixed(4);
-  if(markers[k])map.removeLayer(markers[k]);
-  markers[k]=L.circleMarker([lat,lon],{radius:7,fillColor:color,color:"#fff",fillOpacity:0.85,weight:2}).addTo(map);
-  markers[k].bindPopup(`<b>${title}</b>`).openPopup();
-  map.setView([lat,lon],12,{animate:true});
-}
-favorites.forEach(f=>addMarker(f.lat,f.lon,f.name,"#10b981"));
-PREDEF.forEach(s=>addMarker(s.lat,s.lon,s.n,"#3b82f6"));
-
-map.on('click',e=>{
-  currentSpot={lat:e.latlng.lat,lon:e.latlng.lng};
-  currentRegion=prompt("📍 الولاية؟ (تونس، نابل، بنزرت، سوسة):","تونس")||"تونس";
-  currentDelegation=prompt("📍 المعتمدية؟","")||"";
-  currentDir=prompt("🧭 اتجاه الواجهة؟ (N,NE,E,SE,S,SW,W,NW):","E")||"E";
-  addMarker(currentSpot.lat,currentSpot.lon,"موقع جديد","#f97316");
-  document.getElementById('spotSelector').value="manual";
-});
-
-document.getElementById('spotSelector').addEventListener('change',function(){
-  if(this.value==='predefined'){currentSpot=PREDEF[0];currentDir=currentSpot.d;currentRegion=currentSpot.r;currentDelegation=currentSpot.del;addMarker(currentSpot.lat,currentSpot.lon,currentSpot.n,"#3b82f6");}
-  else if(this.value==='favorites'){if(!favorites.length)return alert("⚠️ لا توجد مواقع محفوظة.");currentSpot=favorites[0];currentDir=currentSpot.facing;currentRegion=currentSpot.region;currentDelegation=currentSpot.delegation||"";addMarker(currentSpot.lat,currentSpot.lon,currentSpot.name,"#10b981");}
-});
-
-async function analyzeSelection(){
-  if(!currentSpot)return alert("⚠️ اختر موقعاً أولاً.");
-  const load=document.getElementById('loading'),res=document.getElementById('results');
-  load.classList.add('active');res.classList.add('hidden');
-  try{
-    const r=await fetch(`${API_BASE}/analyze`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lat:currentSpot.lat,lon:currentSpot.lon,beach_direction:currentDir,region:currentRegion,delegation:currentDelegation})});    if(!r.ok)throw new Error(`HTTP ${r.status}`);
-    currentData=await r.json();renderPro(currentData);
-  }catch(e){alert(`❌ فشل الاتصال: ${e.message}\nتأكد من نشر الباكند وتحديث API_BASE`);}
-  finally{load.classList.remove('active');}
-}
-
-function renderPro(data){
-  document.getElementById('mMoon').textContent=`${data.astronomy.moon.icon} ${data.astronomy.moon.name}`;
-  document.getElementById('mTemp').textContent=`${data.astronomy.water_temp_c}°C`;
-  
-  const avgConf = Math.round((data.windows.morning?.confidence||0 + data.windows.evening?.confidence||0 + data.windows.night?.confidence||0)/3);
-  document.getElementById('mConf').textContent=`${avgConf}%`;
-  const confColor = avgConf>=80?"#10b981":avgConf>=60?"#eab308":"#ef4444";
-  document.getElementById('mConf').style.color=confColor;
-  document.getElementById('confFill').style.width=`${avgConf}%`;
-  document.getElementById('confFill').style.background=confColor;
-  
-  const avgVar = ((data.windows.morning?.data_variance||0) + (data.windows.evening?.data_variance||0) + (data.windows.night?.data_variance||0))/3;
-  document.getElementById('mVar').textContent=avgVar<0.8?"مستقر":"متقلب";
-  document.getElementById('mVar').style.color=avgVar<0.8?"#10b981":"#ef4444";
-  
-  const mig = document.getElementById('migrationAdvice');
-  if(data.migration_advice){mig.textContent=data.migration_advice;mig.classList.remove('hidden');}
-  else{mig.classList.add('hidden');}
-  
-  const tips=document.getElementById('tipsList');tips.innerHTML="";
-  data.pro_tips.forEach(t=>{const li=document.createElement('li');li.textContent=t;tips.appendChild(li);});
-  document.getElementById('proTips').style.display='block';
-  
-  showWindow('morning');
-  document.getElementById('results').classList.remove('hidden');
-  window.scrollTo({top:document.getElementById('results').offsetTop-20,behavior:'smooth'});
-}
-
-function showWindow(period){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.querySelector(`.tab[onclick="showWindow('${period}')"]`).classList.add('active');
-  
-  const w = currentData.windows[period];
-  const cont = document.getElementById('windowContent');
-  if(!w){cont.innerHTML='<div style="text-align:center;color:#94a3b8;padding:20px;">لا تتوفر بيانات كافية لهذه الفترة</div>';return;}
-  
-  const vColor = w.verdict.includes("ممتاز")?"#10b981":w.verdict.includes("جيد")?"#eab308":w.verdict.includes("صعب")?"#f97316":w.verdict.includes("أحمر")?"#ef4444":"#94a3b8";
-  const rColor = (r)=>r==="None"?"#10b981":r==="Low"?"#eab308":r==="Medium"?"#f97316":"#ef4444";
-  
-  let redHtml = "";
-  if(w.is_red_flag){
-    redHtml = `<div class="red-flag-box">🚩 علم أحمر: ${w.red_flags.join(' | ')}</div>`;
-  }
-    cont.innerHTML = `
-    <div class="window-card">
-      ${redHtml}
-      <div class="w-title"><span>📊 تحليل الفترة ${period==='morning'?'الصباحية':period==='evening'?'المسائية':'الليلية'}</span><span style="color:${vColor}">${w.verdict}</span></div>
-      <div class="w-verdict" style="color:${vColor}">${w.verdict}</div>
-      <div class="w-text">${w.explanation}</div>
-      <div class="w-stats">
-        <div class="stat">💨 رياح: <span>${w.avg_wind} كم/س (عظمى ${w.max_wind})</span></div>
-        <div class="stat">🌊 موج فعّال: <span>${w.effective_swell}م (عظمى ${w.max_swell})</span></div>
-        <div class="stat">⏱️ فترة الموج: <span>${w.avg_period} ث</span></div>
-        <div class="stat">📉 ضغط/اتجاه: <span>${w.pressure_now} hPa (${w.pressure_trend>0?'↑':'↓'} ${w.pressure_trend})</span></div>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>🎣 مرشد الصيد الاحترافي - تونس</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root { --bg:#0b0e14; --card:#151922; --border:#252b3b; --text:#e2e8f0; --sub:#94a3b8; --accent:#3b82f6; --green:#10b981; --yellow:#eab308; --orange:#f97316; --red:#ef4444; --font:system-ui,-apple-system,'Segoe UI','Noto Sans Arabic',sans-serif; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { background:var(--bg); color:var(--text); font-family:var(--font); padding:12px; padding-bottom:50px; line-height:1.5; }
+    .container { max-width:680px; margin:0 auto; }
+    header { text-align:center; margin-bottom:16px; padding:16px; background:var(--card); border-radius:16px; border:1px solid var(--border); }
+    header h1 { font-size:1.3rem; margin-bottom:4px; color:var(--accent); }
+    header p { font-size:0.85rem; color:var(--sub); }
+    #map { height:35vh; border-radius:14px; border:1px solid var(--border); margin-bottom:16px; z-index:10; background:#1a202c; }
+    .controls { display:grid; grid-template-columns:1fr auto; gap:10px; margin-bottom:16px; }
+    select, button { background:var(--card); color:var(--text); border:1px solid var(--border); padding:12px; border-radius:10px; font-size:0.95rem; cursor:pointer; transition:all 0.2s; font-family:inherit; }
+    button { background:var(--accent); color:#fff; border:none; font-weight:600; }
+    button:active { transform:scale(0.98); }
+    .loading { text-align:center; color:var(--sub); padding:14px; font-size:0.9rem; display:none; }
+    .loading.active { display:block; }
+    .meta-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:16px; }
+    .meta-box { background:var(--card); padding:12px; border-radius:10px; text-align:center; border:1px solid var(--border); }
+    .meta-label { font-size:0.75rem; color:var(--sub); margin-bottom:4px; }
+    .meta-val { font-size:1.1rem; font-weight:700; }
+    .conf-meter { height:6px; background:#1e293b; border-radius:3px; margin-top:6px; overflow:hidden; }
+    .conf-fill { height:100%; transition:width 0.5s; }
+    .tabs { display:flex; gap:8px; margin-bottom:12px; }
+    .tab { flex:1; padding:10px; background:#1e293b; border:1px solid var(--border); border-radius:10px; text-align:center; cursor:pointer; transition:0.2s; font-weight:600; }
+    .tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+    .window-card { background:var(--card); padding:16px; border-radius:14px; border:1px solid var(--border); margin-bottom:12px; position:relative; }
+    .w-title { font-size:1.1rem; font-weight:700; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
+    .w-verdict { font-size:1.4rem; font-weight:800; margin-bottom:6px; }
+    .w-text { font-size:0.9rem; color:var(--sub); margin-bottom:12px; line-height:1.5; }
+    .w-stats { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:12px; }
+    .stat { background:#1e293b; padding:8px; border-radius:8px; font-size:0.85rem; }
+    .stat span { color:var(--accent); font-weight:700; }
+    .risks { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+    .risk { flex:1; min-width:80px; padding:6px; border-radius:6px; text-align:center; font-size:0.8rem; font-weight:600; }
+    .sinker { background:#1e293b; padding:8px 12px; border-radius:8px; display:inline-block; font-weight:700; color:var(--accent); border:1px solid #334155; margin-bottom:8px; }
+    .red-flag-box { background:#451a1a; border:1px solid var(--red); padding:10px; border-radius:8px; margin-bottom:12px; color:#fca5a5; font-weight:600; font-size:0.9rem; animation:pulse 2s infinite; }
+    .migration-box { background:#1e293b; border-right:3px solid var(--orange); padding:10px; border-radius:8px; margin-top:12px; color:var(--yellow); font-size:0.9rem; }
+    .tips { background:#1e293b; padding:12px; border-radius:10px; margin-top:12px; border-right:3px solid var(--accent); }
+    .tips li { margin-bottom:6px; font-size:0.9rem; color:var(--sub); }
+    .audit-box { background:#0f172a; border:1px solid #334155; padding:12px; border-radius:10px; margin-top:16px; font-size:0.8rem; color:#94a3b8; }
+    .audit-box h3 { color:var(--accent); margin-bottom:8px; font-size:0.95rem; display:flex; align-items:center; gap:6px; }
+    .audit-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+    .audit-item { background:#1e293b; padding:6px 8px; border-radius:6px; }    .audit-item strong { color:#e2e8f0; }
+    .meta-foot { font-size:0.75rem; color:#64748b; margin-top:6px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:4px; }
+    .hidden { display:none; }
+    @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)} 70%{box-shadow:0 0 0 6px rgba(239,68,68,0)} 100%{box-shadow:0 0 0 0 rgba(239,68,68,0)} }
+    .leaflet-popup-content-wrapper { background:#1e293b; color:#e2e8f0; border-radius:10px; }
+    .leaflet-popup-tip { background:#1e293b; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎣 مرشد الصيد الاحترافي تونس</h1>
+      <p>تحليل زمني، فيزيائي، وفلكي متكامل مع نظام الأعلام الحمراء 🚩</p>
+    </header>
+    <div id="map"></div>
+    <div class="controls">
+      <select id="spotSelector">
+        <option value="">📍 اختر شاطئاً أو اضغط على الخريطة</option>
+        <option value="predefined">الشواطئ المبرمجة</option>
+        <option value="favorites">❤️ المفضلات المحفوظة</option>
+      </select>
+      <button onclick="analyzeSelection()">تحليل احترافي</button>
+    </div>
+    <div id="loading" class="loading">⏳ جاري تحليل 48 ساعة من البيانات الحية...</div>
+    <div id="results" class="hidden">
+      <div class="meta-grid">
+        <div class="meta-box"><div class="meta-label">طور القمر</div><div class="meta-val" id="mMoon">--</div></div>
+        <div class="meta-box"><div class="meta-label">حرارة الماء</div><div class="meta-val" id="mTemp">--°C</div></div>
+        <div class="meta-box"><div class="meta-label">ثقة التحليل</div><div class="meta-val" id="mConf">--%</div><div class="conf-meter"><div class="conf-fill" id="confFill"></div></div></div>
+        <div class="meta-box"><div class="meta-label">تباين البيانات</div><div class="meta-val" id="mVar">--</div></div>
       </div>
-      <div class="risks">
-        <div class="risk" style="background:${rColor(w.risks.seaweed)}20;color:${rColor(w.risks.seaweed)}">🌿 طحالب: ${w.risks.seaweed}</div>
-        <div class="risk" style="background:${rColor(w.risks.rip)}20;color:${rColor(w.risks.rip)}">🌊 تيارات: ${w.risks.rip}</div>
-        <div class="risk" style="background:${rColor(w.risks.wind)}20;color:${rColor(w.risks.wind)}">💨 رياح: ${w.risks.wind}</div>
+      <div id="migrationAdvice" class="migration-box hidden"></div>
+      <div class="tabs">
+        <div class="tab active" onclick="showWindow('morning')">🌅 الصباحية</div>
+        <div class="tab" onclick="showWindow('evening')">🌇 المسائية</div>
+        <div class="tab" onclick="showWindow('night')">🌙 الليلية</div>
       </div>
-      <div class="sinker">🔩 وزن الرصاص: ${w.sinker_g} غرام</div>
-      <div class="meta-foot">
-        <span>🌊 طاقة الحطام: ${w.debris_energy}</span>
-        <span>🌊 المد: ${w.tide_status}</span>
-        <span>🧭 دقة الاتجاه: ${w.direction_confidence}</span>
+      <div id="windowContent"></div>
+      <div class="tips" id="proTips" style="display:none"><strong>💡 نصائح المرشد المحترف:</strong><ul id="tipsList"></ul></div>
+      <div class="audit-box" id="auditBox">
+        <h3>🔍 شفافية النموذج وحدود الدقة (/audit)</h3>
+        <div class="audit-grid" id="auditGrid">جاري جلب بيانات الشفافية...</div>
       </div>
     </div>
-  `;
-}
+  </div>
 
-function saveToFavorites(){
-  if(!currentSpot)return alert("⚠️ حلّل موقعاً أولاً.");
-  const exists=favorites.some(f=>Math.abs(f.lat-currentSpot.lat)<0.005&&Math.abs(f.lon-currentSpot.lon)<0.005);
-  if(exists)return alert("📍 الموقع محفوظ مسبقاً.");
-  const name=prompt("أدخل اسماً للموقع:",currentSpot.name||`نقطة ${currentSpot.lat.toFixed(3)}`);
-  if(name){
-    favorites.push({name,lat:currentSpot.lat,lon:currentSpot.lon,facing:currentDir,region:currentRegion,delegation:currentDelegation});
-    localStorage.setItem('surf_pro_fav',JSON.stringify(favorites));
-    addMarker(currentSpot.lat,currentSpot.lon,name,"#10b981");
-    alert("✅ تم الحفظ بنجاح!");
-  }
-}
-</script></body></html>
+  <script>
+    const API_BASE = "https://fishing-backend-by6c.onrender.com";
+    const map = L.map('map',{zoomControl:false}).setView([36.8,10.2],8);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);    L.control.zoom({position:'bottomright'}).addTo(map);
+
+    let currentSpot=null, currentDir='N', currentRegion='تونس', currentDelegation='', currentData=null;
+    let favorites=JSON.parse(localStorage.getItem('surf_pro_fav')||'[]');
+    let markers={};
+
+    const PREDEF=[
+      {n:"قلعة الأندلس (تونس)",lat:36.9150,lon:10.1550,d:"N",r:"تونس",del:"حلق الوادي"},
+      {n:"شاطئ رواد (تونس)",lat:36.9380,lon:10.2150,d:"NE",r:"تونس",del:"رواد"},
+      {n:"الهوارية (نابل)",lat:37.0500,lon:11.0150,d:"N",r:"نابل",del:"الهوارية"},
+      {n:"قليبية (نابل)",lat:36.8500,lon:11.1000,d:"E",r:"نابل",del:"قليبية"},
+      {n:"كاب سيرات (بنزرت)",lat:37.2300,lon:9.2100,d:"NW",r:"بنزرت",del:"غار الملح"},
+      {n:"شط مريم (سوسة)",lat:35.9350,lon:10.5600,d:"E",r:"سوسة",del:"أكودة"},
+      {n:"هرقلة (سوسة)",lat:36.0300,lon:10.5100,d:"NE",r:"سوسة",del:"هرقلة"}
+    ];
+
+    function addMarker(lat,lon,title,color){
+      const k=lat.toFixed(4)+'_'+lon.toFixed(4);
+      if(markers[k])map.removeLayer(markers[k]);
+      markers[k]=L.circleMarker([lat,lon],{radius:7,fillColor:color,color:"#fff",fillOpacity:0.85,weight:2}).addTo(map);
+      markers[k].bindPopup(`<b>${title}</b>`).openPopup();
+      map.setView([lat,lon],12,{animate:true});
+    }
+    favorites.forEach(f=>addMarker(f.lat,f.lon,f.name,"#10b981"));
+    PREDEF.forEach(s=>addMarker(s.lat,s.lon,s.n,"#3b82f6"));
+
+    map.on('click',e=>{
+      currentSpot={lat:e.latlng.lat,lon:e.latlng.lng};
+      currentRegion=prompt("📍 الولاية؟ (تونس، نابل، بنزرت، سوسة):","تونس")||"تونس";
+      currentDelegation=prompt("📍 المعتمدية؟","")||"";
+      currentDir=prompt("🧭 اتجاه الواجهة؟ (N,NE,E,SE,S,SW,W,NW):","E")||"E";
+      addMarker(currentSpot.lat,currentSpot.lon,"موقع جديد","#f97316");
+      document.getElementById('spotSelector').value="manual";
+    });
+
+    document.getElementById('spotSelector').addEventListener('change',function(){
+      if(this.value==='predefined'){currentSpot=PREDEF[0];currentDir=currentSpot.d;currentRegion=currentSpot.r;currentDelegation=currentSpot.del;addMarker(currentSpot.lat,currentSpot.lon,currentSpot.n,"#3b82f6");}
+      else if(this.value==='favorites'){if(!favorites.length)return alert("⚠️ لا توجد مواقع محفوظة.");currentSpot=favorites[0];currentDir=currentSpot.facing;currentRegion=currentSpot.region;currentDelegation=currentSpot.delegation||"";addMarker(currentSpot.lat,currentSpot.lon,currentSpot.name,"#10b981");}
+    });
+
+    function getCachedAnalysis(){
+      const cached=localStorage.getItem('surfcast_cache');
+      if(!cached)return null;
+      const data=JSON.parse(cached);
+      const ageHours=(Date.now()-data.timestamp)/3600000;
+      if(ageHours>6){localStorage.removeItem('surfcast_cache');return null;}
+      return data.payload;
+    }
+    function cacheAnalysis(data){localStorage.setItem('surfcast_cache',JSON.stringify({payload:data,timestamp:Date.now()}));}
+    async function analyzeSelection(){
+      if(!currentSpot)return alert("⚠️ اختر موقعاً أولاً.");
+      const load=document.getElementById('loading'),res=document.getElementById('results');
+      load.classList.add('active');res.classList.add('hidden');
+      try{
+        const r=await fetch(`${API_BASE}/analyze`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lat:currentSpot.lat,lon:currentSpot.lon,beach_direction:currentDir,region:currentRegion,delegation:currentDelegation})});
+        if(!r.ok)throw new Error(`HTTP ${r.status}`);
+        currentData=await r.json();
+        cacheAnalysis(currentData);
+        renderPro(currentData);
+      }catch(e){
+        const fallback=getCachedAnalysis();
+        if(fallback){
+          currentData=fallback;
+          renderPro(currentData);
+          document.getElementById('migrationAdvice').textContent="⚠️ تعذر الاتصال بالخادم. عرض آخر تحليل ناجح (مؤرشف).";
+          document.getElementById('migrationAdvice').classList.remove('hidden');
+        }else{
+          alert(`❌ فشل الاتصال ولا توجد بيانات مؤرشفة: ${e.message}`);
+        }
+      }finally{load.classList.remove('active');}
+    }
+
+    function renderPro(data){
+      document.getElementById('mMoon').textContent=`${data.astronomy.moon.icon} ${data.astronomy.moon.name}`;
+      document.getElementById('mTemp').textContent=`${data.astronomy.water_temp_c}°C`;
+      const avgConf=Math.round((data.windows.morning?.confidence||0 + data.windows.evening?.confidence||0 + data.windows.night?.confidence||0)/3);
+      document.getElementById('mConf').textContent=`${avgConf}%`;
+      const confColor=avgConf>=80?"#10b981":avgConf>=60?"#eab308":"#ef4444";
+      document.getElementById('mConf').style.color=confColor;
+      document.getElementById('confFill').style.width=`${avgConf}%`;
+      document.getElementById('confFill').style.background=confColor;
+      const avgVar=((data.windows.morning?.data_variance||0)+(data.windows.evening?.data_variance||0)+(data.windows.night?.data_variance||0))/3;
+      document.getElementById('mVar').textContent=avgVar<0.8?"مستقر":"متقلب";
+      document.getElementById('mVar').style.color=avgVar<0.8?"#10b981":"#ef4444";
+      const mig=document.getElementById('migrationAdvice');
+      if(data.migration_advice){mig.textContent=data.migration_advice;mig.classList.remove('hidden');}else{mig.classList.add('hidden');}
+      const tips=document.getElementById('tipsList');tips.innerHTML="";
+      data.pro_tips.forEach(t=>{const li=document.createElement('li');li.textContent=t;tips.appendChild(li);});
+      document.getElementById('proTips').style.display='block';
+      showWindow('morning');
+      document.getElementById('results').classList.remove('hidden');
+      window.scrollTo({top:document.getElementById('results').offsetTop-20,behavior:'smooth'});
+    }
+
+    function showWindow(period){
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelector(`.tab[onclick="showWindow('${period}')"]`).classList.add('active');
+      const w=currentData.windows[period];
+      const cont=document.getElementById('windowContent');      if(!w){cont.innerHTML='<div style="text-align:center;color:#94a3b8;padding:20px;">لا تتوفر بيانات كافية لهذه الفترة</div>';return;}
+      const vColor=w.verdict.includes("ممتاز")?"#10b981":w.verdict.includes("جيد")?"#eab308":w.verdict.includes("صعب")?"#f97316":w.verdict.includes("أحمر")||w.verdict.includes("خطر")?"#ef4444":"#94a3b8";
+      const rColor=(r)=>r==="None"?"#10b981":r==="Low"?"#eab308":r==="Medium"?"#f97316":"#ef4444";
+      let redHtml="";
+      if(w.is_red_flag||w.safety_veto){redHtml=`<div class="red-flag-box">🚩 ${w.safety_veto?'خطر/ممنوع':'علم أحمر'}: ${w.red_flags.join(' | ')}</div>`;}
+      cont.innerHTML=`
+        <div class="window-card">
+          ${redHtml}
+          <div class="w-title"><span>📊 تحليل الفترة ${period==='morning'?'الصباحية':period==='evening'?'المسائية':'الليلية'}</span><span style="color:${vColor}">${w.verdict}</span></div>
+          <div class="w-verdict" style="color:${vColor}">${w.verdict}</div>
+          <div class="w-text">${w.explanation}</div>
+          <div class="w-stats">
+            <div class="stat">💨 رياح: <span>${w.avg_wind} كم/س (عظمى ${w.max_wind})</span></div>
+            <div class="stat">🌊 موج فعّال: <span>${w.effective_swell}م (عظمى ${w.max_swell})</span></div>
+            <div class="stat">⏱️ فترة الموج: <span>${w.avg_period} ث</span></div>
+            <div class="stat">📉 ضغط/اتجاه: <span>${w.pressure_now} hPa (${w.pressure_trend>0?'↑':'↓'} ${w.pressure_trend})</span></div>
+          </div>
+          <div class="risks">
+            <div class="risk" style="background:${rColor(w.risks.seaweed)}20;color:${rColor(w.risks.seaweed)}">🌿 طحالب: ${w.risks.seaweed}</div>
+            <div class="risk" style="background:${rColor(w.risks.rip)}20;color:${rColor(w.risks.rip)}">🌊 تيارات: ${w.risks.rip}</div>
+            <div class="risk" style="background:${rColor(w.risks.wind)}20;color:${rColor(w.risks.wind)}">💨 رياح: ${w.risks.wind}</div>
+            <div class="risk" style="background:${rColor(w.risks.rain_turbidity)}20;color:${rColor(w.risks.rain_turbidity)}">🌧️ عكورة: ${w.risks.rain_turbidity}</div>
+          </div>
+          <div class="sinker">🔩 وزن الرصاص: ${w.sinker_g} غرام</div>
+          <div class="meta-foot">
+            <span>🌊 طاقة الحطام: ${w.debris_energy}</span>
+            <span>🌊 المد: ${w.tide_status}</span>
+            <span>📐 زاوية تقاطع: ${w.cross_swell_angle}°</span>
+            <span>🧭 دقة الاتجاه: ${w.direction_confidence}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    async function fetchAudit(){
+      try{
+        const r=await fetch(`${API_BASE}/audit`);
+        if(!r.ok)return;
+        const d=await r.json();
+        const grid=document.getElementById('auditGrid');
+        grid.innerHTML=`
+          <div class="audit-item"><strong>دقة الشبكة:</strong> ${d.model_resolution_km} كم</div>
+          <div class="audit-item"><strong>تحديث البيانات:</strong> كل ${d.update_frequency_hours} ساعات</div>
+          <div class="audit-item"><strong>دقة 0-24س:</strong> ${d.accuracy_0_24h_pct}%</div>
+          <div class="audit-item"><strong>دقة 24-48س:</strong> ${d.accuracy_24_48h_pct}%</div>
+          <div class="audit-item"><strong>مصادر البيانات:</strong> ${d.data_sources.join(' + ')}</div>
+          <div class="audit-item"><strong>أولوية السلامة:</strong> ${d.safety_priority}</div>
+          <div class="audit-item"><strong>نموذج المد:</strong> ${d.tide_model}</div>
+          <div class="audit-item"><strong>معايرة الرياح:</strong> ${d.wind_shift_calibration}</div>
+        `;      }catch(e){console.warn("Audit fetch failed",e);}
+    }
+
+    function saveToFavorites(){
+      if(!currentSpot)return alert("⚠️ حلّل موقعاً أولاً.");
+      const exists=favorites.some(f=>Math.abs(f.lat-currentSpot.lat)<0.005&&Math.abs(f.lon-currentSpot.lon)<0.005);
+      if(exists)return alert("📍 الموقع محفوظ مسبقاً.");
+      const name=prompt("أدخل اسماً للموقع:",currentSpot.name||`نقطة ${currentSpot.lat.toFixed(3)}`);
+      if(name){
+        favorites.push({name,lat:currentSpot.lat,lon:currentSpot.lon,facing:currentDir,region:currentRegion,delegation:currentDelegation});
+        localStorage.setItem('surf_pro_fav',JSON.stringify(favorites));
+        addMarker(currentSpot.lat,currentSpot.lon,name,"#10b981");
+        alert("✅ تم الحفظ بنجاح!");
+      }
+    }
+
+    // تهيئة أولية
+    fetchAudit();
+  </script>
+</body>
+</html>
