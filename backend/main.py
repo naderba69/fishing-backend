@@ -96,7 +96,8 @@ def topographic_correction(wind_deg: float, swell_deg: float, region: str, spot_
         if 45 <= s_corr <= 135: s_corr = (s_corr - 5) % 360
     elif region == "بنزرت" and any(k in spot_name for k in ["سيرات","مشرق","رأس","رمال","زبيب","جميل"]):
         if 340 <= w_corr or w_corr <= 40: w_corr = (w_corr + 15) % 360
-        if 340 <= s_corr or s_corr <= 40: s_corr = (s_corr + 10) % 360    elif region == "سوسة":
+        if 340 <= s_corr or s_corr <= 40: s_corr = (s_corr + 10) % 360
+        elif region == "سوسة":
         if 90 <= s_corr <= 150: s_corr = (s_corr - 8) % 360
     return w_corr % 360, s_corr % 360
 
