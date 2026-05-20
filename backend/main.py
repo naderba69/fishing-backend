@@ -194,7 +194,8 @@ async def analyze(req: AnalyzeReq):
             w_r, m_r = await asyncio.gather(c.get(w_url), c.get(m_url))
             w_r.raise_for_status()
             m_r.raise_for_status()
-        except Exception as e:            logger.error(f"API error: {e}")
+        except Exception as e:
+            logger.error(f"API error: {e}")
             raise HTTPException(502, f"Open-Meteo error: {str(e)}")
         result = analyze_logic(req.lat, req.lon, req.beach_direction, w_r.json(), m_r.json())
         result["name"] = "موقع محدد"
