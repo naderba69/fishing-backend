@@ -1,1492 +1,1873 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>SurfCast Tunisia 🎣</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SurfCast Tunisia 🎣 | صيد السرف في تونس</title>
 
-<style>
-/* ============================================================
-   RESET & VARIABLES
-   ============================================================ */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-:root{
-  --bg0:#030810;
-  --bg1:#07111f;
-  --bg2:#0b1a2e;
-  --bg3:#0f2240;
-  --bd:#163452;
-  --bdh:#1c4a72;
-  --blue:#0ea5e9;
-  --cyan:#06b6d4;
-  --green:#22c55e;
-  --amber:#f59e0b;
-  --red:#ef4444;
-  --purple:#a855f7;
-  --orange:#f97316;
-  --tx1:#e8f4ff;
-  --tx2:#7fb3d3;
-  --tx3:#3d6a8a;
-  --ar:'IBM Plex Sans Arabic',sans-serif;
-  --mono:'JetBrains Mono',monospace;
-  --r:12px;
-  --rs:8px;
-}
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-html,body{
-  font-family:var(--ar);
-  background:var(--bg0);
-  color:var(--tx1);
-  min-height:100vh;
-  overflow-x:hidden;
-}
+  <style>
+    /* ══════════════════════════════════════════════════
+       DESIGN SYSTEM — MILITARY TACTICAL DARK
+    ══════════════════════════════════════════════════ */
+    :root {
+      --bg-0:       #030810;
+      --bg-1:       #07111f;
+      --bg-2:       #0b1a2e;
+      --bg-3:       #0f2240;
+      --bd:         #163452;
+      --bd-hi:      #1c4a72;
+      --c-blue:     #0ea5e9;
+      --c-cyan:     #06b6d4;
+      --c-green:    #22c55e;
+      --c-amber:    #f59e0b;
+      --c-red:      #ef4444;
+      --c-purple:   #a855f7;
+      --c-orange:   #f97316;
+      --tx-1:       #e8f4ff;
+      --tx-2:       #7fb3d3;
+      --tx-3:       #3d6a8a;
+      --font-ar:    'IBM Plex Sans Arabic', sans-serif;
+      --font-mono:  'JetBrains Mono', monospace;
+      --r:          12px;
+      --r-sm:       8px;
+      --t:          all 0.18s cubic-bezier(0.4,0,0.2,1);
+    }
 
-/* scrollbar */
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:var(--bg0)}
-::-webkit-scrollbar-thumb{background:var(--bdh);border-radius:3px}
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* grid bg — z-index:-1 so it never covers content */
-.grid-bg{
-  position:fixed;inset:0;z-index:-1;pointer-events:none;
-  background-image:
-    linear-gradient(rgba(14,165,233,.035) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(14,165,233,.035) 1px,transparent 1px);
-  background-size:44px 44px;
-}
-.orb-bg{
-  position:fixed;top:-180px;left:50%;transform:translateX(-50%);
-  width:700px;height:360px;z-index:-1;pointer-events:none;
-  background:radial-gradient(ellipse,rgba(14,165,233,.1) 0%,transparent 70%);
-}
+    html, body {
+      font-family: var(--font-ar);
+      background: var(--bg-0);
+      color: var(--tx-1);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
 
-/* ============================================================
-   NAVBAR
-   ============================================================ */
-.nav{
-  background:rgba(3,8,16,.95);
-  border-bottom:1px solid var(--bd);
-  padding:0 20px;height:58px;
-  display:flex;align-items:center;justify-content:space-between;
-  position:sticky;top:0;z-index:500;
-  backdrop-filter:blur(20px);
-}
-.nav-brand{display:flex;align-items:center;gap:12px}
-.nav-logo{
-  width:36px;height:36px;
-  background:linear-gradient(135deg,var(--blue),var(--cyan));
-  border-radius:9px;display:flex;align-items:center;
-  justify-content:center;font-size:17px;
-  box-shadow:0 0 16px rgba(14,165,233,.35);
-}
-.nav-title{
-  font-size:16px;font-weight:700;
-  background:linear-gradient(135deg,var(--blue),var(--cyan));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-}
-.nav-sub{font-size:10px;color:var(--tx3);font-family:var(--mono);letter-spacing:2px}
-.live-badge{
-  display:flex;align-items:center;gap:5px;
-  padding:3px 9px;border-radius:20px;
-  background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);
-  font-size:11px;color:var(--green);font-family:var(--mono);
-}
-.live-dot{
-  width:6px;height:6px;border-radius:50%;background:var(--green);
-  animation:blink 1.8s infinite;
-}
-@keyframes blink{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,.5)}50%{opacity:.7;box-shadow:0 0 0 4px rgba(34,197,94,0)}}
-.nav-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.status-pill{
-  display:flex;align-items:center;gap:4px;
-  padding:3px 9px;border-radius:20px;
-  font-size:10px;font-family:var(--mono);
-}
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg-0); }
+    ::-webkit-scrollbar-thumb { background: var(--bd-hi); border-radius: 3px; }
 
-/* ============================================================
-   LAYOUT
-   ============================================================ */
-.layout{
-  max-width:1640px;margin:0 auto;
-  padding:18px;
-  display:grid;
-  grid-template-columns:310px 1fr;
-  gap:16px;
-  align-items:start;
-}
-@media(max-width:1100px){.layout{grid-template-columns:1fr}}
+    /* Grid overlay */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(14,165,233,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(14,165,233,0.035) 1px, transparent 1px);
+      background-size: 44px 44px;
+    }
 
-/* ============================================================
-   CARDS
-   ============================================================ */
-.card{
-  background:var(--bg2);border:1px solid var(--bd);
-  border-radius:var(--r);padding:16px;
-  transition:border-color .18s;
-}
-.card:hover{border-color:var(--bdh)}
-.card-hdr{
-  font-size:11px;font-weight:600;color:var(--tx3);
-  letter-spacing:2px;text-transform:uppercase;
-  font-family:var(--mono);
-  display:flex;align-items:center;gap:7px;
-  margin-bottom:13px;
-}
-.card-hdr::before{content:'';width:3px;height:12px;background:var(--blue);border-radius:2px}
+    /* Top glow orb */
+    body::after {
+      content: '';
+      position: fixed; top: -180px; left: 50%; transform: translateX(-50%);
+      width: 700px; height: 360px; z-index: 0; pointer-events: none;
+      background: radial-gradient(ellipse, rgba(14,165,233,0.1) 0%, transparent 70%);
+    }
 
-/* ============================================================
-   SIDEBAR
-   ============================================================ */
-.sidebar{display:flex;flex-direction:column;gap:13px}
+    #root { position: relative; z-index: 1; }
 
-/* MAP */
-#map-wrap{border-radius:var(--r);overflow:hidden;border:1px solid var(--bd)}
-#the-map{width:100%;height:210px}
-.map-hint{
-  padding:7px 12px;
-  background:rgba(14,165,233,.05);
-  border-top:1px solid var(--bd);
-  font-size:11px;color:var(--tx3);
-  display:flex;align-items:center;gap:5px;
-}
+    /* ── NAVBAR ── */
+    .nav {
+      background: rgba(3,8,16,0.92);
+      backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--bd);
+      padding: 0 24px;
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 1000;
+    }
+    .nav-brand { display: flex; align-items: center; gap: 12px; }
+    .nav-logo {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--c-blue), var(--c-cyan));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 0 18px rgba(14,165,233,0.35);
+    }
+    .nav-title {
+      font-size: 17px; font-weight: 700; letter-spacing: 0.4px;
+      background: linear-gradient(135deg, var(--c-blue), var(--c-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .nav-sub {
+      font-size: 10px; color: var(--tx-3);
+      font-family: var(--font-mono); letter-spacing: 2px; text-transform: uppercase;
+    }
+    .live-badge {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 10px;
+      background: rgba(34,197,94,0.1);
+      border: 1px solid rgba(34,197,94,0.3);
+      border-radius: 20px;
+      font-size: 11px; color: var(--c-green);
+      font-family: var(--font-mono);
+    }
+    .live-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--c-green);
+      animation: blink-green 1.8s ease-in-out infinite;
+    }
+    @keyframes blink-green {
+      0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+      50% { opacity: 0.7; box-shadow: 0 0 0 5px rgba(34,197,94,0); }
+    }
 
-/* SPOT LIST */
-.spot-item{
-  padding:9px 12px;border-radius:var(--rs);
-  border:1px solid transparent;cursor:pointer;
-  transition:all .18s;margin-bottom:4px;
-}
-.spot-item:hover{background:var(--bg3);border-color:var(--bd)}
-.spot-item.active{
-  background:rgba(14,165,233,.1);
-  border-color:var(--blue);
-  box-shadow:0 0 12px rgba(14,165,233,.2);
-}
-.spot-ar{font-size:13px;font-weight:600}
-.spot-en{font-size:10px;color:var(--tx3);font-family:var(--mono);margin-top:2px}
-.spot-meta{font-size:11px;color:var(--cyan);margin-top:3px}
+    /* ── LAYOUT ── */
+    .layout {
+      max-width: 1640px; margin: 0 auto;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 18px;
+      min-height: calc(100vh - 60px);
+      align-items: start;
+    }
+    @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
 
-/* ============================================================
-   BUTTONS
-   ============================================================ */
-.btn{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:8px 15px;border-radius:var(--rs);
-  font-family:var(--ar);font-size:13px;font-weight:600;
-  cursor:pointer;border:none;transition:all .18s;
-}
-.btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
-.btn-blue{
-  background:linear-gradient(135deg,var(--blue),#0077b6);
-  color:white;box-shadow:0 4px 14px rgba(14,165,233,.28);
-}
-.btn-blue:hover:not(:disabled){box-shadow:0 6px 20px rgba(14,165,233,.45);transform:translateY(-1px)}
-.btn-green{
-  background:linear-gradient(135deg,var(--green),#16a34a);
-  color:white;box-shadow:0 4px 14px rgba(34,197,94,.28);
-}
-.btn-green:hover:not(:disabled){box-shadow:0 6px 20px rgba(34,197,94,.45);transform:translateY(-1px)}
-.btn-ghost{
-  background:transparent;border:1px solid var(--bd);color:var(--tx2);
-}
-.btn-ghost:hover:not(:disabled){border-color:var(--blue);color:var(--blue)}
-.btn-sm{padding:5px 10px;font-size:11px}
-.btn-full{width:100%;justify-content:center}
+    /* ── CARDS ── */
+    .card {
+      background: var(--bg-2);
+      border: 1px solid var(--bd);
+      border-radius: var(--r);
+      padding: 18px;
+      transition: var(--t);
+    }
+    .card:hover { border-color: var(--bd-hi); }
 
-/* ============================================================
-   MAIN TABS
-   ============================================================ */
-.mtabs{
-  display:flex;gap:3px;
-  border-bottom:1px solid var(--bd);
-  margin-bottom:16px;
-}
-.mtab{
-  padding:9px 16px;border:none;background:transparent;
-  color:var(--tx3);font-family:var(--ar);font-size:13px;font-weight:600;
-  cursor:pointer;transition:all .18s;
-  border-bottom:2px solid transparent;margin-bottom:-1px;
-}
-.mtab.active{color:var(--blue);border-bottom-color:var(--blue)}
-.mtab:hover:not(.active){color:var(--tx1)}
+    .card-hdr {
+      font-size: 11px; font-weight: 600;
+      color: var(--tx-3); letter-spacing: 2px;
+      text-transform: uppercase; font-family: var(--font-mono);
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 14px;
+    }
+    .card-hdr::before {
+      content: ''; width: 3px; height: 13px;
+      background: var(--c-blue); border-radius: 2px;
+    }
 
-/* DAY TABS */
-.dtabs{
-  display:flex;gap:6px;
-  background:var(--bg1);padding:5px;
-  border-radius:var(--r);border:1px solid var(--bd);
-}
-.dtab{
-  flex:1;padding:8px 5px;border-radius:var(--rs);
-  border:none;background:transparent;color:var(--tx2);
-  font-family:var(--ar);font-size:12px;font-weight:600;
-  cursor:pointer;transition:all .18s;text-align:center;
-}
-.dtab.active{background:var(--blue);color:white}
-.dtab:hover:not(.active){background:var(--bg3);color:var(--tx1)}
-.dtab-sub{display:block;font-size:9px;font-family:var(--mono);margin-top:2px;opacity:.7}
-.dtab-badge{
-  display:inline-block;padding:1px 5px;
-  border-radius:4px;font-size:9px;
-  font-family:var(--mono);font-weight:700;margin-top:2px;
-}
+    /* ── SIDEBAR ── */
+    .sidebar { display: flex; flex-direction: column; gap: 14px; }
 
-/* ============================================================
-   VERDICT
-   ============================================================ */
-.verdict-card{
-  border-radius:var(--r);border:1px solid;
-  padding:20px;position:relative;overflow:hidden;
-  margin-bottom:14px;
-}
-.v-emoji{font-size:42px;line-height:1}
-.v-label{font-size:24px;font-weight:800;margin:6px 0 3px}
-.v-meta{font-size:12px;color:var(--tx2);font-family:var(--mono)}
-.v-stars{display:flex;gap:3px;margin-top:6px;font-size:13px}
-.v-expl{
-  margin-top:13px;padding:12px 14px;
-  background:rgba(0,0,0,.35);border-radius:var(--rs);
-  border-right:3px solid currentColor;
-  font-size:12px;line-height:1.85;color:var(--tx2);
-}
-.v-period-note{
-  margin-top:9px;padding:6px 11px;
-  background:rgba(0,0,0,.25);border-radius:6px;
-  font-size:11px;color:var(--tx3);font-family:var(--mono);
-}
+    /* ── SPOTS ── */
+    .spot-item {
+      padding: 10px 13px;
+      border-radius: var(--r-sm);
+      border: 1px solid transparent;
+      cursor: pointer; transition: var(--t);
+      margin-bottom: 5px;
+    }
+    .spot-item:hover { background: var(--bg-3); border-color: var(--bd); }
+    .spot-item.active {
+      background: rgba(14,165,233,0.1);
+      border-color: var(--c-blue);
+      box-shadow: 0 0 14px rgba(14,165,233,0.2);
+    }
+    .spot-ar { font-size: 13px; font-weight: 600; color: var(--tx-1); }
+    .spot-en { font-size: 11px; color: var(--tx-3); font-family: var(--font-mono); margin-top: 2px; }
+    .spot-meta { font-size: 11px; color: var(--c-cyan); margin-top: 3px; }
 
-/* SEA VISUALIZER */
-.sea{
-  height:54px;border-radius:var(--rs);overflow:hidden;
-  position:relative;
-  background:linear-gradient(180deg,#001830 0%,#092d4e 100%);
-  margin-bottom:10px;
-}
-.sea svg{position:absolute;bottom:0;left:0;width:100%}
-.sea-val{
-  position:absolute;top:5px;right:9px;
-  font-size:11px;font-family:var(--mono);font-weight:700;
-}
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 16px; border-radius: var(--r-sm);
+      font-family: var(--font-ar); font-size: 13px; font-weight: 600;
+      cursor: pointer; border: none; transition: var(--t);
+    }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+    .btn-blue {
+      background: linear-gradient(135deg, var(--c-blue), #0077b6);
+      color: white;
+      box-shadow: 0 4px 14px rgba(14,165,233,0.28);
+    }
+    .btn-blue:hover:not(:disabled) {
+      box-shadow: 0 6px 20px rgba(14,165,233,0.45);
+      transform: translateY(-1px);
+    }
+    .btn-green {
+      background: linear-gradient(135deg, var(--c-green), #16a34a);
+      color: white;
+      box-shadow: 0 4px 14px rgba(34,197,94,0.28);
+    }
+    .btn-green:hover:not(:disabled) {
+      box-shadow: 0 6px 20px rgba(34,197,94,0.45);
+      transform: translateY(-1px);
+    }
+    .btn-ghost {
+      background: transparent; border: 1px solid var(--bd);
+      color: var(--tx-2);
+    }
+    .btn-ghost:hover:not(:disabled) { border-color: var(--c-blue); color: var(--c-blue); }
+    .btn-sm { padding: 5px 10px; font-size: 11px; }
 
-/* COMPASS */
-.compass-row{display:flex;gap:18px;justify-content:center;align-items:center;flex-wrap:wrap;padding:5px 0}
-.crose{
-  width:58px;height:58px;border-radius:50%;
-  border:2px solid var(--bd);background:var(--bg1);
-  position:relative;flex-shrink:0;text-align:center;
-}
-.crose-N{
-  position:absolute;top:2px;left:50%;transform:translateX(-50%);
-  font-size:9px;color:var(--tx3);font-family:var(--mono);
-}
-.crose-needle{
-  position:absolute;top:50%;left:50%;
-  width:2px;height:22px;transform-origin:bottom center;
-  border-radius:1px;
-}
-.crose-dot{
-  position:absolute;top:50%;left:50%;
-  transform:translate(-50%,-50%);
-  width:5px;height:5px;border-radius:50%;
-}
-.crose-lbl{font-size:10px;color:var(--tx3);font-family:var(--mono);margin-top:3px;text-align:center}
-.crose-val{font-size:11px;font-family:var(--mono);text-align:center}
+    /* ── MAP ── */
+    #leaflet-map { width: 100%; height: 215px; border-radius: var(--r); }
+    .map-hint {
+      padding: 7px 13px;
+      background: rgba(14,165,233,0.05);
+      border-top: 1px solid var(--bd);
+      font-size: 11px; color: var(--tx-3);
+      display: flex; align-items: center; gap: 5px;
+      border-radius: 0 0 var(--r) var(--r);
+    }
 
-/* ============================================================
-   RISK GRID
-   ============================================================ */
-.rg{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:9px}
-.rc{
-  background:var(--bg1);border:1px solid var(--bd);
-  border-radius:var(--rs);padding:13px;text-align:center;
-  transition:border-color .18s;
-}
-.rc:hover{border-color:var(--bdh)}
-.rc-icon{font-size:21px;margin-bottom:6px}
-.rc-ttl{font-size:10px;color:var(--tx3);letter-spacing:1.2px;text-transform:uppercase;font-family:var(--mono);margin-bottom:5px}
-.rc-lbl{font-size:13px;font-weight:700}
-.rc-det{font-size:11px;color:var(--tx2);margin-top:3px}
-.rc-tag{
-  font-size:9px;margin-top:4px;padding:2px 6px;
-  border-radius:4px;font-family:var(--mono);font-weight:700;
-  display:inline-block;
-}
-.tidebar{height:3px;background:var(--bg0);border-radius:2px;margin-top:5px;overflow:hidden}
-.tidebar-fill{height:100%;border-radius:2px;transition:width .5s}
+    /* ── MAIN TABS ── */
+    .mtabs {
+      display: flex; gap: 3px;
+      border-bottom: 1px solid var(--bd);
+      margin-bottom: 18px;
+    }
+    .mtab {
+      padding: 10px 17px; border: none;
+      background: transparent; color: var(--tx-3);
+      font-family: var(--font-ar); font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: var(--t);
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+    }
+    .mtab.active { color: var(--c-blue); border-bottom-color: var(--c-blue); }
+    .mtab:hover:not(.active) { color: var(--tx-1); }
 
-/* ============================================================
-   METRICS
-   ============================================================ */
-.mg{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:8px}
-.mb{background:var(--bg1);border:1px solid var(--bd);border-radius:var(--rs);padding:12px}
-.mb-lbl{font-size:9px;color:var(--tx3);letter-spacing:1.5px;text-transform:uppercase;font-family:var(--mono)}
-.mb-val{font-size:20px;font-weight:700;font-family:var(--mono);color:var(--blue);margin:3px 0}
-.mb-unit{font-size:10px;color:var(--tx3)}
+    /* ── DAY TABS ── */
+    .dtabs {
+      display: flex; gap: 7px;
+      background: var(--bg-1); padding: 5px;
+      border-radius: var(--r); border: 1px solid var(--bd);
+    }
+    .dtab {
+      flex: 1; padding: 9px 6px;
+      border-radius: var(--r-sm); border: none;
+      background: transparent; color: var(--tx-2);
+      font-family: var(--font-ar); font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: var(--t); text-align: center;
+    }
+    .dtab.active { background: var(--c-blue); color: white; }
+    .dtab:hover:not(.active) { background: var(--bg-3); color: var(--tx-1); }
+    .dtab-sub { display: block; font-size: 9px; font-family: var(--font-mono); margin-top: 2px; opacity: 0.75; }
+    .dtab-badge {
+      display: inline-block; padding: 1px 5px;
+      border-radius: 4px; font-size: 9px;
+      font-family: var(--font-mono); font-weight: 700;
+      margin-top: 3px;
+    }
 
-/* ============================================================
-   HOUR TIMELINE
-   ============================================================ */
-.htl{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px}
-.htl::-webkit-scrollbar{height:3px}
-.hchip{
-  min-width:65px;padding:7px 5px;
-  border-radius:var(--rs);border:1px solid;
-  cursor:pointer;transition:all .18s;
-  text-align:center;flex-shrink:0;
-}
-.hchip:hover{transform:translateY(-2px)}
-.hchip.sel{box-shadow:0 0 13px currentColor}
-.hchip-t{font-size:11px;font-family:var(--mono);font-weight:700}
-.hchip-e{font-size:14px;margin:3px 0}
-.hchip-s{font-size:10px;color:var(--tx3)}
-.hchip-w{font-size:9px;color:var(--tx3);font-family:var(--mono)}
-.hchip-m{font-size:8px;font-family:var(--mono);margin-top:1px}
+    /* ── VERDICT CARD ── */
+    .verdict-wrap {
+      border-radius: var(--r); border: 1px solid;
+      padding: 22px; position: relative; overflow: hidden;
+    }
+    .verdict-wrap::after {
+      content: '';
+      position: absolute; top: -60px; right: -60px;
+      width: 220px; height: 220px; border-radius: 50%;
+      background: radial-gradient(circle, currentColor 0%, transparent 65%);
+      opacity: 0.06; pointer-events: none;
+    }
+    .v-emoji { font-size: 44px; line-height: 1; }
+    .v-label { font-size: 26px; font-weight: 800; margin: 6px 0 3px; }
+    .v-meta { font-size: 12px; color: var(--tx-2); font-family: var(--font-mono); }
+    .v-stars { display: flex; gap: 3px; margin-top: 7px; }
+    .v-expl {
+      margin-top: 15px; padding: 13px 15px;
+      background: rgba(0,0,0,0.35); border-radius: var(--r-sm);
+      border-right: 3px solid currentColor;
+      font-size: 12.5px; line-height: 1.85; color: var(--tx-2);
+    }
 
-/* SLIDER */
-.sl-wrap{padding:0 3px}
-.hslider{
-  width:100%;height:5px;
-  -webkit-appearance:none;appearance:none;
-  background:var(--bg1);border-radius:3px;outline:none;cursor:pointer;
-}
-.hslider::-webkit-slider-thumb{
-  -webkit-appearance:none;width:17px;height:17px;
-  border-radius:50%;background:var(--blue);cursor:pointer;
-  box-shadow:0 0 9px rgba(14,165,233,.5);
-}
-.sl-lbls{
-  display:flex;justify-content:space-between;
-  font-size:10px;color:var(--tx3);font-family:var(--mono);margin-top:5px;
-}
+    /* ── MODEL ACCURACY NOTICE ── */
+    .model-notice {
+      padding: 10px 14px;
+      background: rgba(168,85,247,0.07);
+      border: 1px solid rgba(168,85,247,0.25);
+      border-radius: var(--r-sm);
+      font-size: 11px; color: var(--c-purple);
+      line-height: 1.7;
+    }
 
-/* ============================================================
-   SINKER
-   ============================================================ */
-.sinker{
-  display:flex;align-items:center;gap:13px;
-  padding:13px 16px;border-radius:var(--rs);
-  border:1px solid var(--bd);background:var(--bg1);
-}
-.sinker-icon{font-size:28px}
-.sinker-type{font-size:14px;font-weight:700}
-.sinker-ar{font-size:11px;color:var(--tx2);margin-top:2px}
-.sinker-why{font-size:11px;color:var(--tx2);margin-top:4px}
-.sinker-wt{font-size:19px;font-weight:800;font-family:var(--mono)}
+    /* ── RISK GRID ── */
+    .rg { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+    .rc {
+      background: var(--bg-1); border: 1px solid var(--bd);
+      border-radius: var(--r-sm); padding: 14px; text-align: center;
+      transition: var(--t);
+    }
+    .rc:hover { border-color: var(--bd-hi); }
+    .rc-icon { font-size: 22px; margin-bottom: 7px; }
+    .rc-ttl { font-size: 10px; color: var(--tx-3); letter-spacing: 1.2px; text-transform: uppercase; font-family: var(--font-mono); margin-bottom: 5px; }
+    .rc-lbl { font-size: 14px; font-weight: 700; }
+    .rc-det { font-size: 11px; color: var(--tx-2); margin-top: 3px; }
+    .rc-warn {
+      font-size: 10px; margin-top: 4px; padding: 2px 6px;
+      background: rgba(245,158,11,0.12); border-radius: 4px;
+      color: var(--c-amber); font-family: var(--font-mono);
+    }
 
-/* ============================================================
-   GOLDEN WINDOWS
-   ============================================================ */
-.gw-row{
-  display:flex;align-items:center;gap:10px;
-  padding:10px 13px;border-radius:var(--rs);
-  border:1px solid var(--bd);background:var(--bg1);
-  cursor:pointer;transition:all .18s;margin-bottom:7px;
-}
-.gw-row:hover{border-color:var(--bdh);background:var(--bg3)}
-.gw-rank{font-size:16px;font-weight:700;min-width:24px}
-.gw-spot{font-size:13px;font-weight:600}
-.gw-info{font-size:11px;color:var(--tx2);margin-top:3px}
-.gw-win{font-family:var(--mono);color:var(--cyan)}
-.gw-rat{font-size:13px;font-weight:700;text-align:center}
-.gw-score{font-size:9px;color:var(--tx3);font-family:var(--mono);margin-top:2px}
+    /* ── HOUR TIMELINE ── */
+    .htl { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 7px; }
+    .hchip {
+      min-width: 68px; padding: 8px 6px;
+      border-radius: var(--r-sm); border: 1px solid;
+      cursor: pointer; transition: var(--t);
+      text-align: center; flex-shrink: 0;
+    }
+    .hchip:hover { transform: translateY(-2px); }
+    .hchip.sel { box-shadow: 0 0 14px currentColor; }
+    .hchip-t { font-size: 11px; font-family: var(--font-mono); font-weight: 700; }
+    .hchip-e { font-size: 15px; margin: 4px 0; }
+    .hchip-s { font-size: 10px; color: var(--tx-3); }
+    .hchip-w { font-size: 9px; color: var(--tx-3); margin-top: 1px; font-family: var(--font-mono); }
+    .hchip-model { font-size: 8px; margin-top: 2px; font-family: var(--font-mono); }
 
-/* ============================================================
-   RANKING
-   ============================================================ */
-.rank-row{
-  display:flex;align-items:center;gap:10px;
-  padding:9px 0;border-bottom:1px solid var(--bg1);
-  cursor:pointer;transition:background .18s;
-}
-.rank-row:hover{background:rgba(14,165,233,.03)}
+    /* ── SLIDER ── */
+    .slider-wrap { padding: 0 3px; }
+    .hslider {
+      width: 100%; height: 5px;
+      -webkit-appearance: none; appearance: none;
+      background: var(--bg-1); border-radius: 3px;
+      outline: none; cursor: pointer;
+    }
+    .hslider::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 18px; height: 18px;
+      border-radius: 50%; background: var(--c-blue); cursor: pointer;
+      box-shadow: 0 0 10px rgba(14,165,233,0.5);
+    }
+    .slider-lbls {
+      display: flex; justify-content: space-between;
+      font-size: 10px; color: var(--tx-3);
+      font-family: var(--font-mono); margin-top: 5px;
+    }
 
-/* ============================================================
-   TABLE
-   ============================================================ */
-.ftable{width:100%;border-collapse:collapse;font-size:12px}
-.ftable th{
-  padding:7px 10px;text-align:right;
-  font-size:10px;color:var(--tx3);
-  font-family:var(--mono);font-weight:600;
-  letter-spacing:1px;border-bottom:1px solid var(--bd);
-}
-.ftable td{padding:9px 10px;border-bottom:1px solid var(--bg1)}
-.ftable tr.tr-active td{background:rgba(14,165,233,.06)}
-.ftable tr:hover td{background:rgba(14,165,233,.04);cursor:pointer}
-.spill{display:inline-block;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:700;font-family:var(--mono)}
+    /* ── METRICS ── */
+    .mg { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 9px; }
+    .mb {
+      background: var(--bg-1); border: 1px solid var(--bd);
+      border-radius: var(--r-sm); padding: 13px;
+    }
+    .mb-lbl { font-size: 9px; color: var(--tx-3); letter-spacing: 1.5px; text-transform: uppercase; font-family: var(--font-mono); }
+    .mb-val { font-size: 21px; font-weight: 700; font-family: var(--font-mono); color: var(--c-blue); margin: 3px 0; }
+    .mb-unit { font-size: 10px; color: var(--tx-3); }
 
-/* ============================================================
-   FORMS
-   ============================================================ */
-.cform{display:flex;flex-direction:column;gap:8px}
-.finput{
-  width:100%;padding:9px 12px;
-  background:var(--bg1);border:1px solid var(--bd);
-  border-radius:var(--rs);color:var(--tx1);
-  font-family:var(--ar);font-size:13px;outline:none;
-  transition:border-color .18s;
-}
-.finput:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(14,165,233,.12)}
-.flbl{font-size:11px;color:var(--tx2);margin-bottom:4px;display:block}
-.coord-box{
-  padding:7px 11px;background:rgba(14,165,233,.08);
-  border-radius:6px;font-size:12px;color:var(--blue);font-family:var(--mono);
-}
-.angle-hint{font-size:10px;color:var(--tx3);font-family:var(--mono);margin-top:3px}
+    /* ── SINKER ── */
+    .sinker {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 18px; border-radius: var(--r-sm);
+      border: 1px solid var(--bd); background: var(--bg-1);
+    }
+    .sinker-icon { font-size: 30px; }
+    .sinker-type { font-size: 15px; font-weight: 700; }
+    .sinker-ar { font-size: 12px; color: var(--tx-2); margin-top: 2px; }
+    .sinker-wt { font-size: 20px; font-weight: 800; font-family: var(--font-mono); }
+    .sinker-why { font-size: 11px; color: var(--tx-2); margin-top: 4px; }
 
-/* ============================================================
-   NOTICES & ALERTS
-   ============================================================ */
-.model-notice{
-  padding:9px 13px;border-radius:var(--rs);
-  font-size:11px;line-height:1.7;margin-bottom:11px;
-}
-.breach-alert{
-  padding:11px 14px;border-radius:var(--rs);
-  background:rgba(245,158,11,.09);border:1px solid rgba(245,158,11,.4);
-  font-size:12px;color:var(--amber);
-  display:flex;align-items:flex-start;gap:8px;
-  margin-bottom:11px;
-}
-.disclaimer{
-  padding:13px 15px;border-radius:var(--rs);
-  background:rgba(239,68,68,.07);
-  border:1px solid rgba(239,68,68,.3);
-  font-size:12px;line-height:1.8;color:var(--red);
-  margin-top:14px;
-}
-.disclaimer-ttl{font-size:13px;font-weight:700;margin-bottom:7px;display:flex;align-items:center;gap:7px}
-.disclaimer-item{display:flex;gap:7px;align-items:flex-start;color:var(--tx2);margin-top:4px}
-.disclaimer-item .di-icon{color:var(--amber);flex-shrink:0}
+    /* ── GOLDEN WINDOWS ── */
+    .gw-row {
+      display: flex; align-items: center; gap: 11px;
+      padding: 11px 14px; border-radius: var(--r-sm);
+      border: 1px solid var(--bd); background: var(--bg-1);
+      cursor: pointer; transition: var(--t); margin-bottom: 7px;
+    }
+    .gw-row:hover { border-color: var(--bd-hi); background: var(--bg-3); }
+    .gw-rank { font-size: 17px; font-weight: 700; min-width: 26px; }
+    .gw-spot { font-size: 13px; font-weight: 600; }
+    .gw-info { font-size: 11px; color: var(--tx-2); margin-top: 3px; }
+    .gw-win { font-size: 11px; color: var(--c-cyan); font-family: var(--font-mono); }
+    .gw-rat { font-size: 13px; font-weight: 700; }
 
-/* ============================================================
-   LOADING & ERROR
-   ============================================================ */
-.loading{
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  min-height:300px;gap:14px;
-}
-.spin{
-  width:42px;height:42px;
-  border:3px solid var(--bd);border-top-color:var(--blue);
-  border-radius:50%;animation:rot .75s linear infinite;
-}
-@keyframes rot{to{transform:rotate(360deg)}}
-.loading-txt{color:var(--tx2);font-size:13px;animation:fblink 1.4s infinite}
-@keyframes fblink{0%,100%{opacity:1}50%{opacity:.35}}
-.errbox{
-  padding:13px;border-radius:var(--rs);
-  background:rgba(239,68,68,.1);
-  border:1px solid rgba(239,68,68,.35);
-  color:var(--red);font-size:13px;margin-bottom:12px;
-}
+    /* ── ACCURACY BANNER ── */
+    .accuracy-banner {
+      padding: 12px 15px; border-radius: var(--r-sm);
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.35);
+      font-size: 12px; color: var(--c-amber); line-height: 1.75;
+    }
+    .accuracy-item { display: flex; align-items: flex-start; gap: 7px; margin-top: 5px; }
 
-/* ============================================================
-   TOAST
-   ============================================================ */
-.toast{
-  position:fixed;bottom:20px;right:20px;
-  padding:11px 16px;background:var(--bg2);
-  border:1px solid var(--bdh);border-radius:var(--r);
-  box-shadow:0 8px 26px rgba(0,0,0,.55);
-  z-index:9999;font-size:13px;
-  animation:tslide .25s ease;max-width:290px;
-  display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
-}
-@keyframes tslide{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
-.toast-close{background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px;line-height:1;padding:0}
+    /* ── BREACH ALERT ── */
+    .breach {
+      padding: 11px 15px; border-radius: var(--r-sm);
+      background: rgba(245,158,11,0.09);
+      border: 1px solid rgba(245,158,11,0.4);
+      font-size: 12px; color: var(--c-amber);
+      display: flex; align-items: flex-start; gap: 9px;
+    }
 
-/* ============================================================
-   EMPTY STATE
-   ============================================================ */
-.empty{
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  min-height:360px;gap:14px;text-align:center;
-}
+    /* ── FORMS ── */
+    .finput {
+      width: 100%; padding: 9px 13px;
+      background: var(--bg-1); border: 1px solid var(--bd);
+      border-radius: var(--r-sm); color: var(--tx-1);
+      font-family: var(--font-ar); font-size: 13px; outline: none;
+      transition: var(--t);
+    }
+    .finput:focus { border-color: var(--c-blue); box-shadow: 0 0 0 3px rgba(14,165,233,0.13); }
+    .flbl { font-size: 11px; color: var(--tx-2); margin-bottom: 4px; display: block; }
 
-/* ============================================================
-   FISH CHIPS
-   ============================================================ */
-.fish-chip{
-  display:inline-flex;align-items:center;gap:5px;
-  padding:6px 10px;margin:3px;
-  background:rgba(14,165,233,.07);
-  border:1px solid rgba(14,165,233,.2);
-  border-radius:20px;font-size:12px;
-}
-.fish-chance{
-  padding:1px 6px;border-radius:4px;font-size:10px;
-  font-family:var(--mono);font-weight:700;
-}
+    /* ── SEA STATE ── */
+    .sea {
+      height: 56px; border-radius: var(--r-sm); overflow: hidden;
+      position: relative;
+      background: linear-gradient(180deg, #001830 0%, #092d4e 100%);
+    }
+    .sea svg { position: absolute; bottom: 0; left: 0; width: 100%; }
 
-/* ============================================================
-   GLOW ANIMATION
-   ============================================================ */
-.glow-g{animation:glowg 3s ease-in-out infinite}
-@keyframes glowg{0%,100%{box-shadow:0 0 8px rgba(34,197,94,.15)}50%{box-shadow:0 0 26px rgba(34,197,94,.4)}}
+    /* ── FISH CARDS ── */
+    .fish-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 11px;
+      background: rgba(14,165,233,0.07);
+      border: 1px solid rgba(14,165,233,0.2);
+      border-radius: 20px; font-size: 12px; margin: 3px;
+    }
+    .fish-chance {
+      padding: 1px 7px; border-radius: 4px; font-size: 10px;
+      font-family: var(--font-mono); font-weight: 700;
+    }
 
-/* ============================================================
-   BEST-SPOT NOW CARD
-   ============================================================ */
-.best-now{
-  border-radius:var(--r);border:1px solid var(--green);
-  padding:18px;background:rgba(34,197,94,.04);
-  margin-bottom:14px;
-}
-.best-now-live{
-  font-size:10px;color:var(--green);font-family:var(--mono);
-  letter-spacing:2px;margin-bottom:10px;
-  display:flex;align-items:center;gap:8px;
-}
-.live-tag{
-  background:var(--green);border-radius:4px;
-  padding:1px 7px;color:white;font-size:9px;
-}
-.best-expl{
-  margin-top:11px;padding:10px 13px;
-  background:rgba(0,0,0,.3);border-radius:7px;
-  border-right:3px solid var(--green);
-  font-size:12px;color:var(--tx2);line-height:1.85;
-}
+    /* ── TIDE BAR ── */
+    .tidebar { height: 3px; background: var(--bg-1); border-radius: 2px; margin-top: 5px; overflow: hidden; }
+    .tidebar-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
 
-/* ============================================================
-   MISC UTILS
-   ============================================================ */
-.fade-in{animation:fi .32s ease}
-@keyframes fi{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
-.hidden{display:none!important}
-.flex{display:flex}
-.flex-col{display:flex;flex-direction:column}
-.gap-8{gap:8px}
-.gap-10{gap:10px}
-.flex-wrap{flex-wrap:wrap}
-.items-center{align-items:center}
-.justify-between{justify-content:space-between}
-.text-mono{font-family:var(--mono)}
-.text-green{color:var(--green)}
-.text-blue{color:var(--blue)}
-.text-amber{color:var(--amber)}
-.text-red{color:var(--red)}
-.text-cyan{color:var(--cyan)}
-.text-purple{color:var(--purple)}
-.text-muted{color:var(--tx3)}
-.text-secondary{color:var(--tx2)}
-.fw-700{font-weight:700}
-.fw-800{font-weight:800}
-.fs-11{font-size:11px}
-.fs-12{font-size:12px}
-.fs-13{font-size:13px}
-.fs-20{font-size:20px}
-.mt-4{margin-top:4px}
-.mt-8{margin-top:8px}
-.mt-10{margin-top:10px}
-.mt-12{margin-top:12px}
-.mb-8{margin-bottom:8px}
-.mb-14{margin-bottom:14px}
-.p-10{padding:10px}
-.ovx{overflow-x:auto}
-.ovy{overflow-y:auto;max-height:280px}
-.w100{width:100%}
-</style>
+    /* ── TABLE ── */
+    .ftable { width: 100%; border-collapse: collapse; }
+    .ftable th {
+      padding: 7px 11px; text-align: right;
+      font-size: 10px; color: var(--tx-3);
+      font-family: var(--font-mono); font-weight: 600;
+      letter-spacing: 1px; border-bottom: 1px solid var(--bd);
+    }
+    .ftable td { padding: 9px 11px; border-bottom: 1px solid var(--bg-1); }
+    .ftable tr:hover td { background: rgba(14,165,233,0.04); cursor: pointer; }
+    .ftable tr.active-row td { background: rgba(14,165,233,0.07); }
+
+    /* ── SCORE PILL ── */
+    .spill {
+      display: inline-block; padding: 2px 8px;
+      border-radius: 5px; font-size: 11px;
+      font-weight: 700; font-family: var(--font-mono);
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 22px; right: 22px;
+      padding: 12px 18px; background: var(--bg-2);
+      border: 1px solid var(--bd-hi); border-radius: var(--r);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.55);
+      z-index: 9999; font-size: 13px;
+      animation: slide-in 0.25s ease; max-width: 300px;
+    }
+    @keyframes slide-in {
+      from { transform: translateX(110%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* ── LOADING ── */
+    .loading {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 320px; gap: 14px;
+    }
+    .spin {
+      width: 44px; height: 44px;
+      border: 3px solid var(--bd); border-top-color: var(--c-blue);
+      border-radius: 50%; animation: rot 0.75s linear infinite;
+    }
+    @keyframes rot { to { transform: rotate(360deg); } }
+    .loading-txt { color: var(--tx-2); font-size: 13px; animation: fade-blink 1.4s infinite; }
+    @keyframes fade-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+    /* ── ERROR ── */
+    .errbox {
+      padding: 14px; border-radius: var(--r-sm);
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.35);
+      color: var(--c-red); font-size: 13px;
+    }
+
+    /* ── GLOW ── */
+    .glow-g { animation: glow-g 3s ease-in-out infinite; }
+    @keyframes glow-g {
+      0%,100% { box-shadow: 0 0 8px rgba(34,197,94,0.15); }
+      50% { box-shadow: 0 0 28px rgba(34,197,94,0.4); }
+    }
+
+    /* ── RANKING ROW ── */
+    .rank-row {
+      display: flex; align-items: center; gap: 11px;
+      padding: 10px 0; border-bottom: 1px solid var(--bg-1);
+      cursor: pointer; transition: var(--t);
+    }
+    .rank-row:hover { background: rgba(14,165,233,0.03); }
+
+    /* ── MISC ── */
+    .fade-in { animation: fi 0.35s ease; }
+    @keyframes fi { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* COMPASS */
+    .compass-wrap { display: flex; align-items: center; justify-content: center; gap: 18px; flex-wrap: wrap; padding: 6px 0; }
+    .crose {
+      width: 60px; height: 60px; border-radius: 50%;
+      border: 2px solid var(--bd); background: var(--bg-1);
+      position: relative; flex-shrink: 0;
+    }
+    .crose-needle {
+      position: absolute; top: 50%; left: 50%;
+      width: 2px; height: 24px;
+      transform-origin: bottom center;
+      border-radius: 1px;
+    }
+    .crose-dot {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 5px; height: 5px; border-radius: 50%;
+    }
+    .crose-N {
+      position: absolute; top: 2px; left: 50%; transform: translateX(-50%);
+      font-size: 9px; color: var(--tx-3); font-family: var(--font-mono);
+    }
+
+    /* CRITICAL DISCLAIMER BOX */
+    .disclaimer {
+      padding: 14px 16px; border-radius: var(--r-sm);
+      background: rgba(239,68,68,0.07);
+      border: 1px solid rgba(239,68,68,0.3);
+      font-size: 12px; line-height: 1.8; color: var(--c-red);
+    }
+    .disclaimer-title { font-size: 13px; font-weight: 700; margin-bottom: 7px; display: flex; align-items: center; gap: 7px; }
+    .disclaimer-item { display: flex; gap: 7px; align-items: flex-start; color: var(--tx-2); margin-top: 5px; }
+    .disclaimer-item span:first-child { color: var(--c-amber); flex-shrink: 0; }
+
+    /* ── CUSTOM FORM ── */
+    .cform { display: flex; flex-direction: column; gap: 9px; }
+    .cform-coord {
+      padding: 7px 11px; background: rgba(14,165,233,0.08);
+      border-radius: 6px; font-size: 12px; color: var(--c-blue);
+      font-family: var(--font-mono);
+    }
+    .angle-preview {
+      font-size: 11px; color: var(--tx-3);
+      font-family: var(--font-mono); margin-top: 4px;
+    }
+
+    /* SCORE COLOR HELPERS */
+    .s1 { color: #22c55e; }
+    .s2 { color: #3b82f6; }
+    .s3 { color: #f59e0b; }
+    .s4 { color: #ef4444; }
+    .bg-s1 { background: rgba(34,197,94,0.12); }
+    .bg-s2 { background: rgba(59,130,246,0.12); }
+    .bg-s3 { background: rgba(245,158,11,0.12); }
+    .bg-s4 { background: rgba(239,68,68,0.12); }
+  </style>
 </head>
 <body>
+<div id="root"></div>
 
-<!-- z-index:-1 backgrounds — NEVER cover content -->
-<div class="grid-bg"></div>
-<div class="orb-bg"></div>
+<script type="text/babel">
+/* ═══════════════════════════════════════════════════════════════════════
+   SURFCAST TUNISIA — FRONTEND v2.1 (REVIEWED & CORRECTED)
+   API: https://fishingbackend-xhom.onrender.com
+   Corrections applied:
+   ✅ Mediterranean wave period thresholds corrected (4–9s typical)
+   ✅ Tide model clearly labeled as approximation (~20min accuracy)
+   ✅ Model accuracy notices per-forecast-day (EU 5km → global switch)
+   ✅ wave_height (total) used as primary display metric
+   ✅ Null/undefined guards on all API fields
+   ✅ Leaflet map cleanup on unmount
+   ✅ Pressure threshold adjusted for Mediterranean (±1.5 hPa/3h)
+   ✅ All data reliability warnings surfaced to user
+═══════════════════════════════════════════════════════════════════════ */
 
-<!-- ═══════════════ NAVBAR ═══════════════ -->
-<nav class="nav">
-  <div class="nav-brand">
-    <div class="nav-logo">🎣</div>
-    <div>
-      <div class="nav-title">SurfCast Tunisia</div>
-      <div class="nav-sub">Tactical Fishing Intelligence</div>
-    </div>
-  </div>
-  <div class="nav-right">
-    <div id="backend-status" class="status-pill" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--amber)">
-      <span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>
-      &nbsp;Connecting...
-    </div>
-    <div class="live-badge"><span class="live-dot"></span>Open-Meteo LIVE</div>
-    <button class="btn btn-ghost btn-sm" onclick="toggleDisclaimer()">ℹ️ دقة البيانات</button>
-    <div id="nav-clock" style="font-size:11px;color:var(--tx3);font-family:var(--mono);padding:3px 9px;background:var(--bg2);border-radius:6px;border:1px solid var(--bd)"></div>
-  </div>
-</nav>
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
-<!-- DISCLAIMER PANEL -->
-<div id="disclaimer-panel" class="hidden" style="background:var(--bg1);border-bottom:1px solid var(--bd);padding:12px 22px">
-  <div class="disclaimer">
-    <div class="disclaimer-ttl">⚠️ حدود دقة النظام — اقرأها قبل أي رحلة صيد</div>
-    <div class="disclaimer-item"><span class="di-icon">🌊</span><span>ارتفاع الأمواج: دقة ±20-30%. النموذج الأوروبي 5كم (أيام 1-3) دقيق، بعده يتحول لنموذج عالمي أقل دقة</span></div>
-    <div class="disclaimer-item"><span class="di-icon">🌊</span><span>المد والجزر في تونس: 0.2م–0.4م فقط. الخوارزمية تقريب هارموني M2+K1 (±20 دقيقة) — ليست جداول فلكية رسمية</span></div>
-    <div class="disclaimer-item"><span class="di-icon">🌀</span><span>التيارات الرجعية: محتسبة من الأمواج والدورة والاتجاه — ليست قياسات مباشرة. تحقق بصرياً قبل الدخول</span></div>
-    <div class="disclaimer-item"><span class="di-icon">💨</span><span>دورة الأمواج في المتوسط: 4-9 ثانية عادةً. عتبات الخطر معيّرة للمتوسط وليس للمحيطات</span></div>
-    <div class="disclaimer-item"><span class="di-icon">📊</span><span>هذا النظام مرجع مساعد فقط. القرار النهائي لرحلتك يعود لخبرتك ورؤيتك الميدانية</span></div>
-  </div>
-</div>
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+const API = "https://fishingbackend-xhom.onrender.com";
 
-<!-- ═══════════════ LAYOUT ═══════════════ -->
-<div class="layout">
+// ── PURE UTILITIES ──────────────────────────────────────────────────────────
+const safe = (v, fb = 0) => (v == null || isNaN(v)) ? fb : v;
+const safeStr = (v, fb = '--') => (v == null || v === '') ? fb : String(v);
 
-  <!-- ═══ SIDEBAR ═══ -->
-  <aside class="sidebar">
-
-    <!-- MAP -->
-    <div id="map-wrap">
-      <div id="the-map"></div>
-      <div class="map-hint">📍 <span>انقر على الخريطة لإضافة موقع مخصص</span></div>
-    </div>
-
-    <!-- CUSTOM SPOT FORM -->
-    <div id="cform-card" class="card hidden" style="border-color:rgba(14,165,233,.4)">
-      <div class="card-hdr">📌 حفظ موقع مخصص</div>
-      <div class="cform">
-        <div id="cform-coord" class="coord-box"></div>
-        <div>
-          <label class="flbl">اسم الموقع (اختياري)</label>
-          <input class="finput" id="cform-name" placeholder="مثال: شاطئ قرمبالية"/>
-        </div>
-        <div>
-          <label class="flbl" id="cform-angle-lbl">زاوية اتجاه البحر: 90° (E)</label>
-          <input type="range" class="hslider" id="cform-angle" min="0" max="359" step="5" value="90"/>
-          <div class="angle-hint">0°=شمال · 90°=شرق · 180°=جنوب · 270°=غرب</div>
-        </div>
-        <div style="display:flex;gap:7px">
-          <button class="btn btn-blue" style="flex:1" onclick="saveCustomSpot()">💾 حفظ وتحليل</button>
-          <button class="btn btn-ghost" onclick="hideCForm()">✕</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- BEST SPOTS BTN -->
-    <button id="btn-best" class="btn btn-green btn-full" onclick="fetchBest()">
-      🏆 أفضل موقع وأفضل وقت (الأيام الـ3)
-    </button>
-
-    <!-- PREDEFINED SPOTS -->
-    <div class="card">
-      <div class="card-hdr">🗺️ مواقع السرف في تونس</div>
-      <div class="ovy" id="spots-list">
-        <div class="loading-txt" style="text-align:center;padding:16px;font-size:12px">⏳ جارٍ التحميل...</div>
-      </div>
-    </div>
-
-    <!-- CUSTOM SPOTS -->
-    <div class="card" id="custom-spots-card" style="display:none">
-      <div class="card-hdr">📌 مواقعي المحفوظة</div>
-      <div id="custom-spots-list"></div>
-    </div>
-
-    <!-- DATA SOURCES -->
-    <div class="card" style="padding:12px 14px">
-      <div style="font-size:11px;color:var(--tx3);font-family:var(--mono);line-height:1.85">
-        <div style="color:var(--tx2);font-weight:600;margin-bottom:5px">📡 مصادر البيانات</div>
-        <div>🌊 Open-Meteo Marine API (ICON-Wave)</div>
-        <div>🌤️ Open-Meteo Weather Forecast API</div>
-        <div>🗺️ EU 5km (أيام 1-3) | Global (يوم 4+)</div>
-        <div>📅 48ساعة تاريخية + 72ساعة توقعات</div>
-        <div style="margin-top:7px;color:var(--green)">✅ 100% مجاني — بدون API Key</div>
-      </div>
-    </div>
-
-  </aside>
-
-  <!-- ═══ MAIN CONTENT ═══ -->
-  <main id="main-content">
-
-    <!-- TABS -->
-    <div class="mtabs">
-      <button class="mtab active" id="tab-forecast" onclick="switchMainTab('forecast')">🌊 التحليل التفصيلي</button>
-      <button class="mtab" id="tab-best" onclick="switchMainTab('best')">🏆 أفضل المواقع والأوقات</button>
-    </div>
-
-    <!-- ERROR -->
-    <div id="error-box" class="errbox hidden"></div>
-
-    <!-- ═ PANEL: FORECAST ═ -->
-    <div id="panel-forecast">
-      <div id="forecast-empty" class="empty">
-        <div style="font-size:54px">🎣</div>
-        <div style="font-size:20px;font-weight:700">اختر موقعاً للبدء</div>
-        <div style="font-size:13px;color:var(--tx2);max-width:370px;line-height:1.85">
-          انقر على أحد المواقع الجانبية أو على الخريطة لإضافة نقطة مخصصة.
-        </div>
-        <button class="btn btn-green" onclick="fetchBest()">🏆 أو ابدأ بعرض أفضل المواقع</button>
-      </div>
-      <div id="forecast-loading" class="loading hidden">
-        <div class="spin"></div>
-        <div class="loading-txt">⚙️ جارٍ تحليل 48ساعة تاريخية + 72ساعة توقعات...</div>
-      </div>
-      <div id="forecast-result" class="hidden fade-in"></div>
-    </div>
-
-    <!-- ═ PANEL: BEST SPOTS ═ -->
-    <div id="panel-best" class="hidden">
-      <div id="best-empty" class="empty">
-        <div style="font-size:44px">🏆</div>
-        <div style="font-size:15px;color:var(--tx2);margin-bottom:12px">اضغط لتحليل جميع المواقع ومقارنة الأيام الـ3</div>
-        <button class="btn btn-green" onclick="fetchBest()">🔍 ابدأ التحليل الشامل</button>
-      </div>
-      <div id="best-loading" class="loading hidden">
-        <div class="spin"></div>
-        <div class="loading-txt" id="best-loading-txt">🔍 جارٍ مسح جميع المواقع...</div>
-      </div>
-      <div id="best-result" class="hidden fade-in"></div>
-    </div>
-
-  </main>
-</div>
-
-<!-- TOAST -->
-<div id="toast" class="toast hidden">
-  <span id="toast-msg"></span>
-  <button class="toast-close" onclick="hideToast()">×</button>
-</div>
-
-<!-- ═══════════════════════════════════════════════
-     VANILLA JS — NO REACT, NO BABEL, NO FRAMEWORK
-     ═══════════════════════════════════════════════ -->
-<script>
-'use strict';
-
-/* ─── CONFIG ─────────────────────────────────────────────────────────────── */
-const API = 'https://fishingbackend-xhom.onrender.com';
-
-/* ─── STATE ──────────────────────────────────────────────────────────────── */
-let state = {
-  spots: [],
-  customSpots: JSON.parse(localStorage.getItem('sc_custom') || '[]'),
-  selectedSpot: null,
-  forecast: null,
-  bestData: null,
-  dayIdx: 0,
-  hourIdx: 0,
-  mainTab: 'forecast',
-  mapInstance: null,
-  mapMarkers: [],
-  pendingCoord: null,
+const degToCompass = d => {
+  if (d == null) return '?';
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(d / 22.5) % 16];
 };
 
-/* ─── UTILITIES ──────────────────────────────────────────────────────────── */
-const sf  = (v, fb=0) => { if(v==null) return fb; const n=+v; return isNaN(n)||!isFinite(n)?fb:n; };
-const $   = id => document.getElementById(id);
-const show = id => $(id).classList.remove('hidden');
-const hide = id => $(id).classList.add('hidden');
-const esc  = s  => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fmtTime = iso => iso ? iso.slice(11, 16) : '--:--';
+const fmtDate = iso => {
+  if (!iso) return '---';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('ar-TN', { weekday: 'long', month: 'short', day: 'numeric' });
+  } catch { return iso.slice(0, 10); }
+};
 
-function degToCompass(d){
-  const dirs=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
-  return dirs[Math.round(sf(d)/22.5)%16];
-}
-function fmtTime(iso){ return iso?iso.slice(11,16):'--:--'; }
-function fmtDate(iso){
-  if(!iso) return '---';
-  try{ return new Date(iso).toLocaleDateString('ar-TN',{weekday:'long',month:'short',day:'numeric'}); }
-  catch{ return iso.slice(0,10); }
-}
-function sColor(s){ return s<=1?'#22c55e':s<=2?'#3b82f6':s<=3?'#f59e0b':'#ef4444'; }
-function sBg(s)   { return s<=1?'rgba(34,197,94,.12)':s<=2?'rgba(59,130,246,.12)':s<=3?'rgba(245,158,11,.12)':'rgba(239,68,68,.12)'; }
-function stars(n) { return Array.from({length:5},(_,i)=>`<span style="font-size:13px;opacity:${i<n?1:.15}">⭐</span>`).join(''); }
+// Score → CSS class
+const sClass = s => s <= 1 ? 's1' : s <= 2 ? 's2' : s <= 3 ? 's3' : 's4';
+const sBgClass = s => s <= 1 ? 'bg-s1' : s <= 2 ? 'bg-s2' : s <= 3 ? 'bg-s3' : 'bg-s4';
+const sColor = s => s <= 1 ? '#22c55e' : s <= 2 ? '#3b82f6' : s <= 3 ? '#f59e0b' : '#ef4444';
 
-function showToast(msg, type='info'){
-  const cols={info:getComputedStyle(document.documentElement).getPropertyValue('--blue').trim(),
-              success:'#22c55e',warn:'#f59e0b',error:'#ef4444'};
-  const el=$('toast');
-  el.style.borderColor=(cols[type]||cols.info)+'60';
-  $('toast-msg').style.color=cols[type]||cols.info;
-  $('toast-msg').textContent=msg;
-  show('toast');
-  clearTimeout(el._t);
-  el._t=setTimeout(hideToast,4200);
-}
-function hideToast(){ hide('toast'); }
-function showError(msg){ $('error-box').textContent='⚠️ '+msg; show('error-box'); }
-function clearError(){ hide('error-box'); }
-function toggleDisclaimer(){ $('disclaimer-panel').classList.toggle('hidden'); }
+const renderStars = n => Array.from({length: 5}, (_, i) => (
+  <span key={i} style={{fontSize: 13, opacity: i < n ? 1 : 0.15}}>⭐</span>
+));
 
-/* ─── CLOCK ──────────────────────────────────────────────────────────────── */
-function updateClock(){
-  $('nav-clock').textContent=new Date().toLocaleTimeString('ar-TN',{hour:'2-digit',minute:'2-digit'})+' TUN';
-}
-setInterval(updateClock,30000); updateClock();
+// Mediterranean-specific fish prediction
+// Based on Tunisian coastal species + seasonal patterns
+const predictFish = (waveH, wavePeriod, windType, tempC) => {
+  const month = new Date().getMonth() + 1;
+  const fish = [];
+  const t = safe(tempC, 20);
+  const h = safe(waveH, 0);
+  const wt = windType?.type || 'offshore';
 
-/* ─── TAB SWITCHING ──────────────────────────────────────────────────────── */
-function switchMainTab(tab){
-  state.mainTab=tab;
-  ['forecast','best'].forEach(t=>{
-    $(  'tab-'+t).classList.toggle('active',t===tab);
-    $('panel-'+t).classList.toggle('hidden',t!==tab);
-  });
-  if(tab==='best' && !state.bestData) fetchBest();
-}
-
-/* ─── BACKEND HEALTH CHECK ───────────────────────────────────────────────── */
-async function checkHealth(){
-  try{
-    const r=await fetch(API+'/health',{signal:AbortSignal.timeout(8000)});
-    const el=$('backend-status');
-    if(r.ok){
-      el.style.background='rgba(34,197,94,.1)';
-      el.style.border='1px solid rgba(34,197,94,.3)';
-      el.style.color='#22c55e';
-      el.innerHTML='<span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>&nbsp;Backend OK';
-    } else throw new Error();
-  } catch{
-    const el=$('backend-status');
-    el.style.background='rgba(239,68,68,.1)';
-    el.style.border='1px solid rgba(239,68,68,.3)';
-    el.style.color='#ef4444';
-    el.innerHTML='<span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>&nbsp;Backend Sleeping';
+  // قروس (Loup / Loubine) — active in broken water, offshore wind
+  if (h > 0.4 && h < 1.8 && (wt === 'offshore' || wt === 'side_offshore')) {
+    fish.push({ name: 'قروس / لوبين', nameEn: 'European Sea Bass', emoji: '🐟',
+      chance: h > 0.6 ? 'عالي' : 'متوسط', chanceColor: '#22c55e' });
   }
-}
 
-/* ─── LOAD PREDEFINED SPOTS ──────────────────────────────────────────────── */
-async function loadSpots(){
-  try{
-    const r=await fetch(API+'/spots',{signal:AbortSignal.timeout(15000)});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const d=await r.json();
-    state.spots=d.spots||[];
-    renderSpotsList();
-    initMap();
-  } catch(e){
-    $('spots-list').innerHTML='<div style="color:var(--red);font-size:12px;padding:12px">⚠️ تعذّر تحميل المواقع — انتظر 30-60 ثانية وأعد تحميل الصفحة (Render Free يدخل في سبات)</div>';
-    showError('تعذّر الاتصال بالخادم. انتظر دقيقة وأعد المحاولة.');
-    // Still init map even without spots
-    initMap();
+  // سرغ — prefers moderate, clear water, slightly offshore
+  if (h < 1.2 && wt !== 'onshore') {
+    fish.push({ name: 'سرغ', nameEn: 'White Sea Bream', emoji: '🐠',
+      chance: 'متوسط', chanceColor: '#3b82f6' });
   }
-}
 
-/* ─── RENDER SPOTS LIST ──────────────────────────────────────────────────── */
-function renderSpotsList(){
-  const el=$('spots-list');
-  el.innerHTML=state.spots.map(s=>`
-    <div class="spot-item${state.selectedSpot?.id===s.id?' active':''}" id="si-${s.id}" onclick="fetchForecast(${JSON.stringify(s).replace(/"/g,'&quot;')})">
-      <div class="spot-ar">${esc(s.name)}</div>
-      <div class="spot-en">${esc(s.name_en)}</div>
-      <div class="spot-meta">${esc(s.region)} · ${sf(s.beach_angle,90).toFixed(0)}° ${degToCompass(s.beach_angle)}</div>
-    </div>`).join('');
-  renderCustomSpotsList();
-}
-
-function renderCustomSpotsList(){
-  const el=$('custom-spots-list');
-  if(state.customSpots.length===0){
-    $('custom-spots-card').style.display='none';
-    return;
+  // دنيس — warm water, calm sea
+  if (t > 18 && h < 0.9) {
+    fish.push({ name: 'دنيس', nameEn: 'Gilt-head Bream', emoji: '🐡',
+      chance: 'متوسط', chanceColor: '#3b82f6' });
   }
-  $('custom-spots-card').style.display='block';
-  el.innerHTML=state.customSpots.map(s=>`
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
-      <div class="spot-item${state.selectedSpot?.id===s.id?' active':''}" style="flex:1;margin-bottom:0"
-           id="si-${s.id}" onclick="fetchForecast(${JSON.stringify(s).replace(/"/g,'&quot;')})">
-        <div class="spot-ar">${esc(s.name)}</div>
-        <div class="spot-meta">${sf(s.lat).toFixed(3)}°N · ${sf(s.lon).toFixed(3)}°E · ${sf(s.beach_angle,90).toFixed(0)}°</div>
+
+  // مورين / ثعبان البحر — rough water, debris, onshore
+  if (h > 1.0 || wt === 'onshore') {
+    fish.push({ name: 'مورين / أنقليس', nameEn: 'Moray / Conger Eel', emoji: '🐍',
+      chance: 'متوسط', chanceColor: '#f59e0b' });
+  }
+
+  // موسى (Sole) — spring/autumn bottom fish
+  if ((month >= 3 && month <= 5) || (month >= 9 && month <= 11)) {
+    fish.push({ name: 'موسى', nameEn: 'Sole', emoji: '🦈',
+      chance: 'موسمي', chanceColor: '#a855f7' });
+  }
+
+  // بياح / دنتري — rocky bottom near Kelibia, Bizerte
+  if (h < 1.5 && safe(wavePeriod, 5) > 5) {
+    fish.push({ name: 'بياح / دنتري', nameEn: 'Dentex', emoji: '🐟',
+      chance: 'متوسط', chanceColor: '#3b82f6' });
+  }
+
+  return fish.slice(0, 4);
+};
+
+// ── SEA STATE VISUALIZER ─────────────────────────────────────────────────────
+const SeaViz = ({ h = 0 }) => {
+  const amp = Math.min(safe(h) * 14, 26);
+  const col = h > 2 ? '#ef4444' : h > 1.2 ? '#f59e0b' : h > 0.5 ? '#0ea5e9' : '#22c55e';
+  return (
+    <div className="sea">
+      <svg viewBox="0 0 400 56" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="wg" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={col} stopOpacity="0.55"/>
+            <stop offset="100%" stopColor={col} stopOpacity="0.08"/>
+          </linearGradient>
+        </defs>
+        <path fill="url(#wg)"
+          d={`M0,${28+amp} C60,${28-amp} 120,${28+amp} 180,${28-amp*0.6}
+              C240,${28+amp*0.6} 300,${28-amp} 360,${28+amp} C380,${28-amp*0.4} 400,${28+amp*0.4} 400,${28+amp}
+              L400,56 L0,56 Z`}/>
+        <path fill="none" stroke={col} strokeWidth="1.5" strokeOpacity="0.65"
+          d={`M0,${28+amp} C60,${28-amp} 120,${28+amp} 180,${28-amp*0.6}
+              C240,${28+amp*0.6} 300,${28-amp} 360,${28+amp} C380,${28-amp*0.4} 400,${28+amp*0.4} 400,${28+amp}`}/>
+      </svg>
+      <div style={{position:'absolute',top:5,right:9,fontSize:11,fontFamily:'JetBrains Mono',color:col,fontWeight:700}}>
+        {safe(h).toFixed(2)}م
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="removeCustomSpot('${s.id}')">🗑️</button>
-    </div>`).join('');
-}
+    </div>
+  );
+};
 
-/* ─── LEAFLET MAP ────────────────────────────────────────────────────────── */
-function initMap(){
-  if(state.mapInstance) return;
+// ── COMPASS ROSE ─────────────────────────────────────────────────────────────
+const Compass = ({ windDir, swellDir }) => {
+  const wd = safe(windDir, 0);
+  const sd = safe(swellDir, 0);
+  return (
+    <div className="compass-wrap">
+      <div style={{textAlign:'center'}}>
+        <div className="crose">
+          <span className="crose-N">N</span>
+          <div className="crose-needle" style={{
+            background:'#0ea5e9',
+            transform:`translate(-50%,-100%) rotate(${wd}deg)`
+          }}/>
+          <div className="crose-dot" style={{background:'#0ea5e9'}}/>
+        </div>
+        <div style={{fontSize:10,color:'var(--tx-3)',fontFamily:'JetBrains Mono',marginTop:4}}>ريح</div>
+        <div style={{fontSize:11,color:'#0ea5e9',fontFamily:'JetBrains Mono'}}>
+          {degToCompass(wd)} {Math.round(wd)}°
+        </div>
+      </div>
+      <div style={{textAlign:'center'}}>
+        <div className="crose">
+          <span className="crose-N">N</span>
+          <div className="crose-needle" style={{
+            background:'#22c55e',
+            transform:`translate(-50%,-100%) rotate(${sd}deg)`
+          }}/>
+          <div className="crose-dot" style={{background:'#22c55e'}}/>
+        </div>
+        <div style={{fontSize:10,color:'var(--tx-3)',fontFamily:'JetBrains Mono',marginTop:4}}>أمواج</div>
+        <div style={{fontSize:11,color:'#22c55e',fontFamily:'JetBrains Mono'}}>
+          {degToCompass(sd)} {Math.round(sd)}°
+        </div>
+      </div>
+    </div>
+  );
+};
 
-  const map=L.map('the-map',{center:[36.5,10.3],zoom:7,zoomControl:true,attributionControl:false});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);
-  state.mapInstance=map;
+// ── SINKER CARD ───────────────────────────────────────────────────────────────
+const SinkerCard = ({ s }) => {
+  if (!s) return null;
+  return (
+    <div className="sinker" style={{borderColor:`${s.color}35`}}>
+      <div className="sinker-icon">{s.emoji}</div>
+      <div style={{flex:1}}>
+        <div className="sinker-type" style={{color:s.color}}>{s.type}</div>
+        <div className="sinker-ar">{s.type_ar}</div>
+        <div className="sinker-why">{s.reason}</div>
+      </div>
+      <div style={{textAlign:'center',minWidth:70}}>
+        <div className="sinker-wt" style={{color:s.color}}>{s.weight}</div>
+        <div style={{fontSize:9,color:'var(--tx-3)',fontFamily:'JetBrains Mono',marginTop:1}}>الوزن الموصى به</div>
+      </div>
+    </div>
+  );
+};
 
-  // Click for custom spots
-  map.on('click',e=>onMapClick(e.latlng.lat,e.latlng.lng));
+// ── LEAFLET MAP ───────────────────────────────────────────────────────────────
+const LeafletMap = React.memo(({ spots, selectedSpot, onMapClick, onSpotSelect }) => {
+  const mapRef = useRef(null);
+  const instanceRef = useRef(null);
+  const markersRef = useRef([]);
 
-  syncMapMarkers();
-}
-
-function mkIcon(color,size=12){
-  return L.divIcon({
-    html:`<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 0 ${size}px ${color}"></div>`,
-    className:'',iconSize:[size,size],iconAnchor:[size/2,size/2]
+  // Build icon function
+  const mkIcon = (color, size = 12) => L.divIcon({
+    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};
+           border:2px solid white;box-shadow:0 0 ${size}px ${color};"></div>`,
+    className: '', iconSize: [size, size], iconAnchor: [size/2, size/2]
   });
-}
 
-function syncMapMarkers(){
-  if(!state.mapInstance) return;
-  // Remove old
-  state.mapMarkers.forEach(m=>m.remove());
-  state.mapMarkers=[];
+  useEffect(() => {
+    if (instanceRef.current) return; // already initialised
 
-  const all=[...state.spots,...state.customSpots];
-  all.forEach(spot=>{
-    const sel=state.selectedSpot?.id===spot.id;
-    const m=L.marker([spot.lat,spot.lon],{icon:mkIcon(sel?'#22c55e':'#0ea5e9',sel?16:12)}).addTo(state.mapInstance);
-    m.bindTooltip(`<b>${spot.name}</b><br/><span style="font-size:11px;color:#aaa">${spot.name_en}</span>`,{permanent:false,direction:'top'});
-    m.on('click',e=>{e.originalEvent.stopPropagation();fetchForecast(spot);});
-    state.mapMarkers.push(m);
-  });
-}
+    const map = L.map('leaflet-map', {
+      center: [36.5, 10.3], zoom: 7,
+      zoomControl: true, attributionControl: false
+    });
 
-/* ─── CUSTOM SPOT FORM ───────────────────────────────────────────────────── */
-function onMapClick(lat,lon){
-  state.pendingCoord={lat:+lat.toFixed(5),lon:+lon.toFixed(5)};
-  $('cform-name').value='';
-  $('cform-angle').value=90;
-  $('cform-coord').textContent=`📍 ${lat.toFixed(5)}°N, ${lon.toFixed(5)}°E`;
-  $('cform-angle-lbl').textContent=`زاوية اتجاه البحر: 90° (E)`;
-  show('cform-card');
-}
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19
+    }).addTo(map);
 
-$('cform-angle').addEventListener('input',function(){
-  const v=parseInt(this.value);
-  $('cform-angle-lbl').textContent=`زاوية اتجاه البحر: ${v}° (${degToCompass(v)})`;
+    instanceRef.current = map;
+
+    map.on('click', e => onMapClick(e.latlng.lat, e.latlng.lng));
+
+    return () => {
+      // cleanup on unmount
+      if (instanceRef.current) {
+        instanceRef.current.remove();
+        instanceRef.current = null;
+      }
+    };
+  }, []);
+
+  // Sync markers when spots list changes
+  useEffect(() => {
+    if (!instanceRef.current) return;
+    // Remove old markers
+    markersRef.current.forEach(({ m }) => m.remove());
+    markersRef.current = [];
+
+    spots.forEach(spot => {
+      const isSelected = selectedSpot && selectedSpot.id === spot.id;
+      const m = L.marker([spot.lat, spot.lon], {
+        icon: mkIcon(isSelected ? '#22c55e' : '#0ea5e9', isSelected ? 16 : 12)
+      }).addTo(instanceRef.current);
+
+      m.bindTooltip(`<b>${spot.name}</b><br/><span style="font-size:11px;color:#aaa">${spot.name_en}</span>`, {
+        permanent: false, direction: 'top'
+      });
+      m.on('click', e => { e.originalEvent.stopPropagation(); onSpotSelect(spot); });
+      markersRef.current.push({ m, spot });
+    });
+  }, [spots, selectedSpot]);
+
+  return <div id="leaflet-map" />;
 });
 
-function hideCForm(){ hide('cform-card'); state.pendingCoord=null; }
+// ── GOLDEN WINDOW ROW ─────────────────────────────────────────────────────────
+const GWRow = ({ w, idx, onSelect }) => {
+  const medals = ['🥇','🥈','🥉'];
+  return (
+    <div className="gw-row" onClick={() => onSelect(w)}>
+      <div className="gw-rank">{medals[idx] || `${idx+1}`}</div>
+      <div style={{flex:1}}>
+        <div className="gw-spot">{w.spot_name}</div>
+        <div className="gw-info">
+          <span style={{color:'var(--c-cyan)'}}>{w.day_label}</span>
+          &nbsp;·&nbsp;
+          <span className="gw-win">{w.window_label}</span>
+          {w.region && <span style={{marginRight:8,color:'var(--tx-3)'}}> · {w.region}</span>}
+        </div>
+      </div>
+      <div style={{textAlign:'center',minWidth:80}}>
+        <div className="gw-rat" style={{color:w.rating_color}}>{w.rating}</div>
+        <div style={{fontSize:9,color:'var(--tx-3)',fontFamily:'JetBrains Mono',marginTop:2}}>
+          score: {safe(w.avg_score).toFixed(2)}
+        </div>
+      </div>
+    </div>
+  );
+};
 
-function saveCustomSpot(){
-  if(!state.pendingCoord) return;
-  const name=$('cform-name').value.trim()||`موقع (${state.pendingCoord.lat.toFixed(3)}, ${state.pendingCoord.lon.toFixed(3)})`;
-  const angle=parseInt($('cform-angle').value)||90;
-  const ns={
-    id:`custom_${state.pendingCoord.lat}_${state.pendingCoord.lon}`,
-    name, name_en:name, lat:state.pendingCoord.lat,
-    lon:state.pendingCoord.lon, beach_angle:angle, region:'مخصص'
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+const Toast = ({ msg, type = 'info', onClose }) => {
+  useEffect(() => { const t = setTimeout(onClose, 4200); return () => clearTimeout(t); }, []);
+  const cols = { info:'#0ea5e9', success:'#22c55e', warn:'#f59e0b', error:'#ef4444' };
+  return (
+    <div className="toast" style={{borderColor:`${cols[type]}50`}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10}}>
+        <div style={{color:cols[type],fontSize:12}}>{msg}</div>
+        <button onClick={onClose} style={{background:'none',border:'none',color:'var(--tx-3)',cursor:'pointer',fontSize:16,lineHeight:1}}>×</button>
+      </div>
+    </div>
+  );
+};
+
+// ── DATA RELIABILITY FOOTER ───────────────────────────────────────────────────
+const ReliabilityFooter = () => (
+  <div className="disclaimer" style={{marginTop:16}}>
+    <div className="disclaimer-title">⚠️ حدود دقة النظام — اقرأها قبل أي رحلة</div>
+    <div className="disclaimer-item">
+      <span>🌊</span>
+      <span>ارتفاع الأمواج: دقة ±20-30% — النموذج الأوروبي 5كم دقيق لأيام 1-3، بعدها يتحول لنموذج عالمي أقل دقة مُحوَّل من كل 3 ساعات</span>
+    </div>
+    <div className="disclaimer-item">
+      <span>🌊</span>
+      <span>المد والجزر في تونس: ≈ 0.2م–0.4م فقط (البحر المتوسط مائل صغير). خوارزمية المد في التطبيق هي تقريب رياضي وليست بيانات فلكية حقيقية</span>
+    </div>
+    <div className="disclaimer-item">
+      <span>🌀</span>
+      <span>التيارات الرجعية: مُحتسبة بناءً على الأمواج، الدورة، والاتجاه — ليست قياسات مباشرة. تحقق دائماً بصرياً من الشاطئ قبل الدخول</span>
+    </div>
+    <div className="disclaimer-item">
+      <span>💨</span>
+      <span>دورة الأمواج في المتوسط تتراوح عادةً بين 4-9 ثانية — عتبات الخطر معيّرة خصيصاً للمتوسط وليست للمحيطات</span>
+    </div>
+    <div className="disclaimer-item">
+      <span>📊</span>
+      <span>هذا النظام مرجع مساعد للتخطيط فقط. القرار النهائي للرحلة يعود دائماً لخبرتك الشخصية ورؤيتك الميدانية</span>
+    </div>
+  </div>
+);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MAIN APP
+// ══════════════════════════════════════════════════════════════════════════════
+function App() {
+  // ── State ────────────────────────────────────────────────────────────────
+  const [spots, setSpots] = useState([]);
+  const [selSpot, setSelSpot] = useState(null);
+  const [forecast, setForecast] = useState(null);
+  const [bestData, setBestData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingBest, setLoadingBest] = useState(false);
+  const [error, setError] = useState(null);
+  const [mainTab, setMainTab] = useState('forecast');
+  const [dayIdx, setDayIdx] = useState(0);
+  const [hourIdx, setHourIdx] = useState(0);
+  const [toast, setToast] = useState(null);
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+
+  const [customSpots, setCustomSpots] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('sc_custom') || '[]'); }
+    catch { return []; }
+  });
+  const [pendingCoord, setPendingCoord] = useState(null);
+  const [cName, setCName] = useState('');
+  const [cAngle, setCAngle] = useState(90);
+  const [showCForm, setShowCForm] = useState(false);
+
+  // Backend health check state
+  const [backendStatus, setBackendStatus] = useState('checking'); // checking | ok | error
+
+  // ── Persist custom spots ─────────────────────────────────────────────────
+  useEffect(() => {
+    localStorage.setItem('sc_custom', JSON.stringify(customSpots));
+  }, [customSpots]);
+
+  // ── Load predefined spots + health check ────────────────────────────────
+  useEffect(() => {
+    // Health check
+    fetch(`${API}/health`)
+      .then(r => r.ok ? setBackendStatus('ok') : setBackendStatus('error'))
+      .catch(() => setBackendStatus('error'));
+
+    // Load spots
+    fetch(`${API}/spots`)
+      .then(r => { if (!r.ok) throw new Error('spots fetch failed'); return r.json(); })
+      .then(d => setSpots(d.spots || []))
+      .catch(() => setError('⚠️ تعذّر الاتصال بالخادم. قد يكون في وضع السبات (Render Free Tier) — انتظر 30-60 ثانية وأعد المحاولة.'));
+  }, []);
+
+  // ── Fetch forecast ────────────────────────────────────────────────────────
+  const fetchForecast = useCallback(async (spot) => {
+    setLoading(true);
+    setError(null);
+    setSelSpot(spot);
+    setDayIdx(0);
+    setHourIdx(0);
+    setMainTab('forecast');
+
+    try {
+      const p = new URLSearchParams({
+        lat: spot.lat, lon: spot.lon,
+        name: spot.name || '',
+        beach_angle: spot.beach_angle ?? 90
+      });
+      const r = await fetch(`${API}/forecast?${p}`);
+      if (!r.ok) {
+        const txt = await r.text();
+        throw new Error(`HTTP ${r.status}: ${txt.slice(0,120)}`);
+      }
+      const d = await r.json();
+      setForecast(d);
+    } catch(e) {
+      setError(`خطأ: ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // ── Fetch best spots ──────────────────────────────────────────────────────
+  const fetchBest = useCallback(async () => {
+    setLoadingBest(true);
+    setError(null);
+    setMainTab('best-spots');
+
+    try {
+      const p = new URLSearchParams();
+      if (customSpots.length > 0) p.set('custom_spots', JSON.stringify(customSpots));
+      const r = await fetch(`${API}/best-spots?${p}`);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const d = await r.json();
+      setBestData(d);
+    } catch(e) {
+      setError(`خطأ في تحليل المواقع: ${e.message}`);
+    } finally {
+      setLoadingBest(false);
+    }
+  }, [customSpots]);
+
+  // ── Map click → custom spot form ─────────────────────────────────────────
+  const onMapClick = useCallback((lat, lon) => {
+    setPendingCoord({ lat: +lat.toFixed(5), lon: +lon.toFixed(5) });
+    setCName(''); setCAngle(90);
+    setShowCForm(true);
+  }, []);
+
+  const saveCustomSpot = useCallback(() => {
+    if (!pendingCoord) return;
+    const ns = {
+      id: `custom_${pendingCoord.lat}_${pendingCoord.lon}`,
+      name: cName || `موقع (${pendingCoord.lat.toFixed(3)}, ${pendingCoord.lon.toFixed(3)})`,
+      name_en: cName || 'Custom Spot',
+      lat: pendingCoord.lat, lon: pendingCoord.lon,
+      beach_angle: +cAngle || 90, region: 'مخصص'
+    };
+    setCustomSpots(p => [...p.filter(s => s.id !== ns.id), ns]);
+    setShowCForm(false);
+    setToast({ msg: `✅ تم حفظ: ${ns.name}`, type: 'success' });
+    fetchForecast(ns);
+  }, [pendingCoord, cName, cAngle, fetchForecast]);
+
+  // ── Derived state ─────────────────────────────────────────────────────────
+  const allSpots = useMemo(() => [...spots, ...customSpots], [spots, customSpots]);
+
+  const activeDay = useMemo(() => {
+    if (!forecast?.days) return null;
+    return forecast.days[dayIdx] || forecast.days[0] || null;
+  }, [forecast, dayIdx]);
+
+  const activeHour = useMemo(() => {
+    if (!activeDay?.hours) return null;
+    return activeDay.hours[hourIdx] || activeDay.hours[0] || null;
+  }, [activeDay, hourIdx]);
+
+  // Model accuracy label per day
+  const modelAccuracy = (dayOffset) => {
+    if (dayOffset <= 2) return { label: 'EU 5km ✅', color: '#22c55e', note: 'نموذج أوروبي 5كم — دقة عالية' };
+    return { label: 'Global ⚠️', color: '#f59e0b', note: 'نموذج عالمي مُحوَّل من 3ساعات — دقة منخفضة' };
   };
-  state.customSpots=state.customSpots.filter(s=>s.id!==ns.id);
-  state.customSpots.push(ns);
-  localStorage.setItem('sc_custom',JSON.stringify(state.customSpots));
-  hideCForm();
-  renderCustomSpotsList();
-  syncMapMarkers();
-  showToast('✅ تم حفظ: '+name,'success');
-  fetchForecast(ns);
-}
 
-function removeCustomSpot(id){
-  state.customSpots=state.customSpots.filter(s=>s.id!==id);
-  localStorage.setItem('sc_custom',JSON.stringify(state.customSpots));
-  renderCustomSpotsList();
-  syncMapMarkers();
-  showToast('🗑️ تم حذف الموقع','info');
-}
-
-/* ─── FETCH FORECAST ─────────────────────────────────────────────────────── */
-async function fetchForecast(spot){
-  // Accept spot as object or JSON string (from inline onclick)
-  if(typeof spot==='string') try{ spot=JSON.parse(spot); }catch{ return; }
-
-  state.selectedSpot=spot;
-  state.dayIdx=0; state.hourIdx=0;
-  switchMainTab('forecast');
-  clearError();
-  hide('forecast-empty');
-  hide('forecast-result');
-  show('forecast-loading');
-  syncMapMarkers();
-  renderSpotsList();
-
-  try{
-    const p=new URLSearchParams({lat:spot.lat,lon:spot.lon,name:spot.name||'',beach_angle:spot.beach_angle??90});
-    const r=await fetch(`${API}/forecast?${p}`,{signal:AbortSignal.timeout(30000)});
-    if(!r.ok){ const t=await r.text(); throw new Error(`HTTP ${r.status}: ${t.slice(0,100)}`); }
-    state.forecast=await r.json();
-    hide('forecast-loading');
-    renderForecast();
-  } catch(e){
-    hide('forecast-loading');
-    show('forecast-empty');
-    showError('خطأ في جلب البيانات: '+e.message);
-  }
-}
-
-/* ─── FETCH BEST SPOTS ───────────────────────────────────────────────────── */
-async function fetchBest(){
-  switchMainTab('best');
-  clearError();
-  hide('best-empty');
-  hide('best-result');
-  show('best-loading');
-  $('btn-best').disabled=true;
-  const n=state.spots.length+state.customSpots.length;
-  $('best-loading-txt').textContent=`🔍 جارٍ مسح ${n} موقع بالتوازي...`;
-
-  try{
-    const p=new URLSearchParams();
-    if(state.customSpots.length>0) p.set('custom_spots',JSON.stringify(state.customSpots));
-    const r=await fetch(`${API}/best-spots?${p}`,{signal:AbortSignal.timeout(60000)});
-    if(!r.ok) throw new Error(`HTTP ${r.status}`);
-    state.bestData=await r.json();
-    hide('best-loading');
-    renderBest();
-  } catch(e){
-    hide('best-loading');
-    show('best-empty');
-    showError('خطأ في تحليل المواقع: '+e.message);
-  } finally{
-    $('btn-best').disabled=false;
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   RENDER FORECAST
-   ═══════════════════════════════════════════════════════════════ */
-function renderForecast(){
-  const fc=state.forecast;
-  if(!fc||!fc.days||!fc.days.length){
-    show('forecast-empty'); return;
-  }
-  const dayData=fc.days[state.dayIdx]||fc.days[0];
-  if(!dayData||!dayData.hours||!dayData.hours.length){ show('forecast-empty'); return; }
-  const h=dayData.hours[state.hourIdx]||dayData.hours[0];
-  if(!h){ show('forecast-empty'); return; }
-
-  const waveH=sf(h.wave_height,sf(h.swell_height));
-  const wavePer=sf(h.wave_period,sf(h.swell_period,5));
-  const acc=h.model_accuracy||{color:'#22c55e',note:'EU ICON 5km'};
-  const verdict=h.verdict||{emoji:'?',verdict:'—',color:'#8ab4d4',bg_color:'transparent',stars:0};
-
-  let html='';
-
-  /* ── Model accuracy notice ── */
-  html+=`<div class="model-notice" style="background:${acc.color}14;border:1px solid ${acc.color}35;color:${acc.color}">
-    🛰️ <strong>دقة النموذج:</strong> ${esc(acc.note)}
-    ${(h.day_offset||0)>=3?'<span style="color:var(--amber)"> — بيانات مُحوَّلة من 3ساعات، استخدم بحذر</span>':''}
-  </div>`;
-
-  /* ── Breach alert ── */
-  if(fc.historical_breach){
-    html+=`<div class="breach-alert">
-      <span style="font-size:18px">⚠️</span>
-      <div>
-        <div style="font-weight:700;margin-bottom:3px">اضطراب بحري مُسجَّل في الـ48 ساعة الماضية</div>
-        <div style="font-size:11px;line-height:1.7">أمواج >1.8م مع ريح بحرية — خطر عشب بحري وحطام قائم
-        ${fc.hours_since_breach!=null?` (منذ ~${sf(fc.hours_since_breach).toFixed(0)} ساعة)`:''}</div>
-      </div>
-    </div>`;
-  }
-
-  /* ── Verdict card ── */
-  html+=`<div class="verdict-card" style="border-color:${verdict.color}45;background:${verdict.bg_color};color:${verdict.color}">
-    <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap">
-      <div>
-        <div class="v-emoji">${esc(verdict.emoji)}</div>
-        <div class="v-label" style="color:${verdict.color}">${esc(verdict.verdict)}</div>
-        <div class="v-stars">${stars(sf(verdict.stars))}</div>
-        <div class="v-meta" style="margin-top:8px">${esc(fc.spot?.name||'')} · ${esc(dayData.day_label)} · ${fmtTime(h.time)}</div>
-      </div>
-      <div style="flex:1;min-width:180px">
-        ${buildSeaSVG(waveH)}
-        <div style="margin-top:8px">${buildCompass(h.wind_direction,h.wave_direction||h.swell_direction)}</div>
-      </div>
-    </div>
-    ${h.arabic_explanation?`<div class="v-expl" style="border-right-color:${verdict.color}">${esc(h.arabic_explanation)}</div>`:''}
-    <div class="v-period-note">
-      ℹ️ دورة الأمواج: ${wavePer.toFixed(1)}ث
-      ${wavePer>9?' — نادرة ومؤثرة جداً في المتوسط ⚠️':wavePer>6.5?' — متوسطة (مناسبة للسرف)':' — قصيرة (ريح محلية)'}
-      &nbsp;|&nbsp; ${esc(h.wind_classification?.label||'—')}
-    </div>
-  </div>`;
-
-  /* ── Day tabs ── */
-  html+=`<div class="card mb-14"><div class="card-hdr">📅 اختيار اليوم</div>
-    <div class="dtabs">
-      ${fc.days.map((d,i)=>{
-        const a=d.model_accuracy||{color:'#22c55e',label:'EU ✅'};
-        const sc=sf(d.avg_verdict_score,2);
-        return `<button class="dtab${state.dayIdx===i?' active':''}" onclick="setDay(${i})">
-          ${esc(d.day_label)}
-          <span class="dtab-sub">${d.date||''}</span>
-          <span class="dtab-badge" style="background:${state.dayIdx===i?'rgba(255,255,255,.15)':sColor(sc)+'18'};color:${state.dayIdx===i?'white':sColor(sc)}">
-            ${d.excellent_count>0?`⭐${d.excellent_count}`:`~${sc.toFixed(1)}`}
-          </span>
-          <span style="display:block;font-size:8px;margin-top:2px;color:${state.dayIdx===i?'rgba(255,255,255,.6)':a.color};font-family:var(--mono)">${a.label}</span>
-        </button>`;
-      }).join('')}
-    </div>
-    ${dayData.best_window?`<div style="margin-top:10px;padding:9px 12px;background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25);border-radius:7px;display:flex;align-items:center;gap:8px">
-      <span style="font-size:17px">⏰</span>
-      <div>
-        <div style="font-size:12px;font-weight:700;color:var(--green)">أفضل نافذة زمنية لهذا اليوم</div>
-        <div style="font-size:11px;color:var(--tx2);font-family:var(--mono);margin-top:2px">${esc(dayData.best_window.label)} · avg: ${sf(dayData.best_window.avg_score).toFixed(2)}</div>
-      </div>
-    </div>`:''}
-  </div>`;
-
-  /* ── Hour timeline ── */
-  html+=`<div class="card mb-14"><div class="card-hdr">⏱️ جدول الساعات</div>
-    <div class="htl" id="hour-chips">
-      ${dayData.hours.map((hr,i)=>{
-        const v=hr.verdict||{};
-        const hw=sf(hr.wave_height,sf(hr.swell_height));
-        return `<div class="hchip${state.hourIdx===i?' sel':''}" id="hc-${i}"
-          style="border-color:${(v.color||'#0ea5e9')}55;background:${state.hourIdx===i?(v.color||'#0ea5e9')+'18':'var(--bg1)'};color:${v.color||'#0ea5e9'};${state.hourIdx===i?'box-shadow:0 0 12px '+(v.color||'#0ea5e9')+'35':''}"
-          onclick="setHour(${i})">
-          <div class="hchip-t">${fmtTime(hr.time)}</div>
-          <div class="hchip-e">${esc(v.emoji||'?')}</div>
-          <div class="hchip-s">${hw.toFixed(1)}م</div>
-          <div class="hchip-w">${sf(hr.wind_speed_kmh).toFixed(0)}كم/س</div>
-          <div class="hchip-m" style="color:${(hr.day_offset||0)<=2?'#22c55e':'#f59e0b'}">${(hr.day_offset||0)<=2?'5km':'GLB'}</div>
-        </div>`;
-      }).join('')}
-    </div>
-    <div class="sl-wrap" style="margin-top:10px">
-      <input type="range" class="hslider" id="hour-slider"
-        min="0" max="${Math.max(0,dayData.hours.length-1)}" value="${state.hourIdx}"
-        oninput="setHour(parseInt(this.value))"/>
-      <div class="sl-lbls"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:00</span></div>
-    </div>
-  </div>`;
-
-  /* ── Risk grid ── */
-  const sea=h.seaweed_risk||{emoji:'?',label:'—',color:'#8ab4d4',score:1};
-  const rip=h.rip_current_risk||{emoji:'?',label:'—',color:'#8ab4d4',score:1};
-  const wnd=h.wind_danger||{emoji:'?',label:'—',color:'#8ab4d4',detail:'—'};
-  const tide=h.tide_phase||{label:'—',phase:'mid',level:0};
-  const pres=h.pressure_trend||{label:'—',delta:0,fishing_bonus:false};
-  const wcls=h.wind_classification||{emoji:'?',label:'—'};
-
-  html+=`<div class="card mb-14"><div class="card-hdr">🛡️ لوحة المخاطر</div>
-    <div class="rg">
-      <div class="rc" style="border-color:${sea.color}35">
-        <div class="rc-icon">${esc(sea.emoji)}</div>
-        <div class="rc-ttl">أعشاب / حطام</div>
-        <div class="rc-lbl" style="color:${sea.color}">${esc(sea.label)}</div>
-        ${sea.persistence_active?'<div class="rc-tag" style="background:rgba(245,158,11,.12);color:var(--amber)">⏳ تأثير 48ساعة</div>':''}
-      </div>
-      <div class="rc" style="border-color:${rip.color}35">
-        <div class="rc-icon">${esc(rip.emoji)}</div>
-        <div class="rc-ttl">تيار رجعي</div>
-        <div class="rc-lbl" style="color:${rip.color}">${esc(rip.label)}</div>
-        <div class="rc-det text-mono">${wavePer.toFixed(1)}ث / ${esc(h.swell_classification?.label||'—')}</div>
-      </div>
-      <div class="rc" style="border-color:${wnd.color}35">
-        <div class="rc-icon">${esc(wnd.emoji)}</div>
-        <div class="rc-ttl">ريح / رمي</div>
-        <div class="rc-lbl" style="color:${wnd.color}">${esc(wnd.label)}</div>
-        <div class="rc-det">${esc(wnd.detail)}</div>
-      </div>
-      <div class="rc">
-        <div class="rc-icon">${tide.phase==='low'?'🌊⬇️':tide.phase==='high'?'🌊⬆️':'🌊'}</div>
-        <div class="rc-ttl">مد / جزر</div>
-        <div class="rc-lbl" style="color:var(--blue)">${esc(tide.label)}</div>
-        <div class="tidebar"><div class="tidebar-fill" style="width:${Math.max(5,((sf(tide.level)+1)/2)*100)}%;background:var(--blue)"></div></div>
-        <div class="rc-tag" style="background:rgba(168,85,247,.1);color:var(--purple)">⚠️ تقريب ±20د</div>
-      </div>
-      <div class="rc">
-        <div class="rc-icon">${pres.fishing_bonus?'📉':pres.trend?.includes('rising')?'📈':'📊'}</div>
-        <div class="rc-ttl">ضغط جوي</div>
-        <div class="rc-lbl" style="color:${pres.fishing_bonus?'var(--green)':'var(--tx2)';};font-size:12px">${esc(pres.label)}</div>
-        <div class="rc-det">${sf(h.pressure_hpa).toFixed(0)} hPa (${sf(pres.delta)>=0?'+':''}${sf(pres.delta).toFixed(1)})</div>
-      </div>
-      <div class="rc">
-        <div class="rc-icon">${esc(wcls.emoji)}</div>
-        <div class="rc-ttl">اتجاه الريح</div>
-        <div class="rc-lbl" style="color:var(--cyan);font-size:12px">${esc(wcls.label)}</div>
-        <div class="rc-det">${degToCompass(h.wind_direction)} ${Math.round(sf(h.wind_direction))}°</div>
-      </div>
-    </div>
-  </div>`;
-
-  /* ── Metrics ── */
-  const mets=[
-    {l:'موج كلي Hm0',v:sf(h.wave_height,sf(h.swell_height)).toFixed(2),u:'متر (رئيسي ✅)',c:'var(--blue)'},
-    {l:'موج ريحي',v:sf(h.wind_wave_height).toFixed(2),u:'متر (سائد في المتوسط)',c:'var(--amber)'},
-    {l:'دورة الأمواج',v:wavePer.toFixed(2),u:'ثانية [4-9ث طبيعي]',c:'var(--green)'},
-    {l:'دورة الذروة Tp',v:sf(h.swell_peak_period,wavePer).toFixed(2),u:'ثانية',c:'var(--purple)'},
-    {l:'سرعة الريح',v:sf(h.wind_speed_kmh).toFixed(1),u:'كم/ساعة',c:'var(--amber)'},
-    {l:'هبّة الريح',v:sf(h.wind_gust_kmh).toFixed(1),u:'كم/ساعة (Gust)',c:'var(--red)'},
-    {l:'الحرارة',v:sf(h.temperature_c).toFixed(1),u:'°مئوية',c:'var(--orange)'},
-    {l:'احتمال أمطار',v:sf(h.precipitation_probability).toFixed(0),u:'%',c:sf(h.precipitation_probability)>50?'var(--red)':'var(--tx2)'},
-    {l:'تغطية سحابية',v:sf(h.cloud_cover).toFixed(0),u:'%',c:'var(--tx2)'},
-    {l:'ضغط جوي',v:sf(h.pressure_hpa).toFixed(0),u:'hPa',c:'var(--blue)'},
-  ];
-  html+=`<div class="card mb-14"><div class="card-hdr">📊 مقاييس البحر الخام</div>
-    <div class="mg">${mets.map(m=>`
-      <div class="mb">
-        <div class="mb-lbl">${esc(m.l)}</div>
-        <div class="mb-val" style="color:${m.c}">${esc(m.v)}</div>
-        <div class="mb-unit">${esc(m.u)}</div>
-      </div>`).join('')}
-    </div>
-  </div>`;
-
-  /* ── Sinker ── */
-  const sin=h.sinker_recommendation||{};
-  html+=`<div class="card mb-14"><div class="card-hdr">⚓ توصية الثقل (السينكر)</div>
-    <div class="sinker" style="border-color:${(sin.color||'var(--bd)')}35">
-      <div class="sinker-icon">${esc(sin.emoji||'⚓')}</div>
-      <div style="flex:1">
-        <div class="sinker-type" style="color:${sin.color||'var(--tx1)'}">${esc(sin.type||'—')}</div>
-        <div class="sinker-ar">${esc(sin.type_ar||'')}</div>
-        <div class="sinker-why">${esc(sin.reason||'')}</div>
-      </div>
-      <div style="text-align:center;min-width:70px">
-        <div class="sinker-wt" style="color:${sin.color||'var(--tx1)'}">${esc(sin.weight||'—')}</div>
-        <div style="font-size:9px;color:var(--tx3);font-family:var(--mono);margin-top:1px">الوزن</div>
-      </div>
-    </div>
-  </div>`;
-
-  /* ── Fish prediction ── */
-  html+=`<div class="card mb-14"><div class="card-hdr">🐟 أسماك محتملة</div>
-    <div>${buildFishChips(waveH,wavePer,h.wind_classification,h.temperature_c)}</div>
-    <div style="margin-top:8px;font-size:11px;color:var(--tx3)">ℹ️ استرشادي بناءً على الظروف والموسم فقط</div>
-  </div>`;
-
-  /* ── 3-day summary table ── */
-  html+=`<div class="card mb-14"><div class="card-hdr">📋 ملخص الـ3 أيام</div>
-    <div class="ovx"><table class="ftable">
-      <thead><tr>
-        <th>اليوم</th><th>التاريخ</th><th>أفضل نافذة</th><th>أفضل حكم</th><th>متوسط</th><th>ممتاز</th><th>النموذج</th>
-      </tr></thead>
-      <tbody>
-        ${fc.days.map((d,i)=>{
-          const a=d.model_accuracy||{color:'#22c55e',label:'EU ✅'};
-          const sc=sf(d.avg_verdict_score,2);
-          return `<tr class="${state.dayIdx===i?'tr-active':''}" onclick="setDay(${i})">
-            <td style="font-weight:600">${esc(d.day_label)}</td>
-            <td style="font-size:11px;color:var(--tx3);font-family:var(--mono)">${d.date||''}</td>
-            <td style="font-family:var(--mono);color:var(--cyan)">${esc(d.best_window?.label||'--')}</td>
-            <td style="color:${(d.best_hour?.verdict?.color||'#8ab4d4')};font-weight:700">${esc(d.best_hour?.verdict?.verdict||'—')}</td>
-            <td><span class="spill" style="background:${sBg(sc)};color:${sColor(sc)}">${sc.toFixed(2)}</span></td>
-            <td style="text-align:center;color:${d.excellent_count>0?'var(--green)':'var(--tx3)'};font-weight:700">${d.excellent_count>0?`⭐${d.excellent_count}`:'—'}</td>
-            <td style="font-size:10px;color:${a.color};font-family:var(--mono)">${esc(a.label)}</td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table></div>
-  </div>`;
-
-  /* ── Disclaimer ── */
-  html+=buildDisclaimer();
-
-  $('forecast-result').innerHTML=html;
-  show('forecast-result');
-
-  // Scroll active chip into view
-  setTimeout(()=>{
-    const chip=$(`hc-${state.hourIdx}`);
-    if(chip) chip.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
-  },100);
-}
-
-function setDay(i){
-  state.dayIdx=i; state.hourIdx=0;
-  renderForecast();
-}
-function setHour(i){
-  state.hourIdx=i;
-  // Update slider value
-  const sl=$('hour-slider');
-  if(sl) sl.value=i;
-  // Lightweight re-render (just re-render whole thing — fast enough with Vanilla)
-  renderForecast();
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   RENDER BEST SPOTS
-   ═══════════════════════════════════════════════════════════════ */
-function renderBest(){
-  const bd=state.bestData;
-  if(!bd){ show('best-empty'); return; }
-
-  let html='';
-
-  /* ── Best spot now ── */
-  if(bd.best_spot_now?.spot){
-    const bn=bd.best_spot_now;
-    const bv=bn.current?.verdict||{};
-    html+=`<div class="best-now glow-g">
-      <div class="best-now-live">
-        <span class="live-tag">🔴 LIVE</span>
-        أفضل موقع للصيد الآن
-        <span style="margin-right:auto;font-size:9px;color:var(--tx3)">من ${sf(bd.total_spots_analyzed)} موقع</span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:13px;flex-wrap:wrap">
-        <div style="font-size:36px">🏆</div>
-        <div style="flex:1">
-          <div style="font-size:19px;font-weight:800;color:var(--green)">${esc(bn.spot.name)}</div>
-          <div style="font-size:12px;color:var(--tx3);font-family:var(--mono);margin-top:3px">${esc(bn.spot.name_en)} · ${esc(bn.spot.region||'')}</div>
-          ${bn.current?`<div style="display:flex;gap:7px;margin-top:10px;flex-wrap:wrap">
-            <span style="padding:3px 10px;background:${bv.color||'#0ea5e9'}18;border:1px solid ${bv.color||'#0ea5e9'}45;border-radius:6px;font-size:13px;font-weight:700;color:${bv.color||'#0ea5e9'}">${esc(bv.verdict||'—')}</span>
-            <span style="padding:3px 10px;background:rgba(14,165,233,.09);border:1px solid rgba(14,165,233,.25);border-radius:6px;font-size:12px;color:var(--blue);font-family:var(--mono)">🌊 ${sf(bn.current.wave_height,sf(bn.current.swell_height)).toFixed(2)}م / ${sf(bn.current.wave_period,sf(bn.current.swell_period,5)).toFixed(1)}ث</span>
-            <span style="padding:3px 10px;background:rgba(245,158,11,.09);border:1px solid rgba(245,158,11,.25);border-radius:6px;font-size:12px;color:var(--amber);font-family:var(--mono)">💨 ${sf(bn.current.wind_speed_kmh).toFixed(0)} كم/س</span>
-          </div>`:''}
-        </div>
-        <button class="btn btn-blue" onclick="fetchForecast(${JSON.stringify(bn.spot).replace(/"/g,'&quot;')})">🔍 تفاصيل كاملة</button>
-      </div>
-      ${bn.arabic_explanation?`<div class="best-expl">${esc(bn.arabic_explanation)}</div>`:''}
-    </div>`;
-  }
-
-  /* ── Model note ── */
-  html+=`<div class="model-notice" style="background:rgba(168,85,247,.07);border:1px solid rgba(168,85,247,.25);color:var(--purple);margin-bottom:13px">
-    🛰️ النوافذ في أيام 1-3: نموذج EU ICON 5km دقيق ✅ | يوم 4+: نموذج عالمي ⚠️ استخدم بحذر
-  </div>`;
-
-  /* ── Golden windows ── */
-  html+=`<div class="card mb-14">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px">
-      <div class="card-hdr" style="margin:0">⏰ النوافذ الذهبية للصيد</div>
-      <div style="font-size:11px;color:var(--tx3);font-family:var(--mono)">${(bd.golden_windows||[]).length} فرصة</div>
-    </div>
-    ${!bd.golden_windows?.length?`<div style="text-align:center;padding:26px;color:var(--tx3);font-size:13px">🌪️ لا توجد نوافذ ذهبية في الـ3 أيام القادمة</div>`:''}
-    ${(bd.golden_windows||[]).map((w,i)=>{
-      const medals=['🥇','🥈','🥉'];
-      return `<div class="gw-row" onclick="goToSpotWindow('${esc(w.spot_id)}',${esc(JSON.stringify(w))})">
-        <div class="gw-rank">${medals[i]||i+1}</div>
-        <div style="flex:1">
-          <div class="gw-spot">${esc(w.spot_name)}</div>
-          <div class="gw-info">
-            <span style="color:var(--cyan)">${esc(w.day_label)}</span>
-            &nbsp;·&nbsp;<span class="gw-win">${esc(w.window_label)}</span>
-            ${w.region?`<span style="color:var(--tx3);margin-right:7px"> · ${esc(w.region)}</span>`:''}
-          </div>
-          <div style="font-size:10px;font-family:var(--mono);margin-top:3px;color:${w.model_color||'#22c55e'}">${esc(w.model_note||'')}</div>
-        </div>
-        <div style="text-align:center;min-width:80px">
-          <div class="gw-rat" style="color:${w.rating_color||'#22c55e'}">${esc(w.rating||'—')}</div>
-          <div class="gw-score">score: ${sf(w.avg_score).toFixed(2)}</div>
-        </div>
-      </div>`;
-    }).join('')}
-  </div>`;
-
-  /* ── Spot rankings ── */
-  html+=`<div class="card mb-14"><div class="card-hdr">📊 ترتيب جميع المواقع (متوسط الـ3 أيام)</div>
-    ${(bd.spot_rankings||[]).map((r,i)=>`
-      <div class="rank-row" onclick="fetchForecast(${JSON.stringify(r.spot).replace(/"/g,'&quot;')})">
-        <div style="font-size:17px;font-weight:700;min-width:28px;color:${i===0?'#ffd700':i===1?'#c0c0c0':i===2?'#cd7f32':'var(--tx3)'}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</div>
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:600">${esc(r.spot.name)}</div>
-          <div style="display:flex;gap:7px;margin-top:3px;flex-wrap:wrap">
-            <span style="font-size:10px;color:var(--tx3)">${esc(r.spot.region||'')}</span>
-            <span style="font-size:10px;color:var(--cyan);font-family:var(--mono)">أفضل يوم: ${esc(r.best_day||'—')}</span>
-            ${r.historical_breach?'<span style="font-size:10px;color:var(--amber)">⚠️ اضطراب سابق</span>':''}
+  // ── RENDER ────────────────────────────────────────────────────────────────
+  return (
+    <div>
+      {/* NAVBAR */}
+      <nav className="nav">
+        <div className="nav-brand">
+          <div className="nav-logo">🎣</div>
+          <div>
+            <div className="nav-title">SurfCast Tunisia</div>
+            <div className="nav-sub">Tactical Fishing Intelligence</div>
           </div>
         </div>
-        <div style="text-align:center;min-width:62px">
-          <div style="font-size:14px;font-weight:700;font-family:var(--mono);color:${sColor(sf(r.avg_score))}">${sf(r.avg_score).toFixed(2)}</div>
-          <div style="font-size:9px;color:var(--tx3)">avg</div>
+        <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+          {/* Backend status */}
+          <div style={{
+            display:'flex',alignItems:'center',gap:5,padding:'3px 9px',
+            background: backendStatus === 'ok' ? 'rgba(34,197,94,0.1)' : backendStatus === 'error' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)',
+            border: `1px solid ${backendStatus === 'ok' ? 'rgba(34,197,94,0.3)' : backendStatus === 'error' ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)'}`,
+            borderRadius:20, fontSize:10,
+            color: backendStatus === 'ok' ? '#22c55e' : backendStatus === 'error' ? '#ef4444' : '#f59e0b',
+            fontFamily:'JetBrains Mono'
+          }}>
+            <span style={{width:6,height:6,borderRadius:'50%',background:'currentColor',display:'inline-block'}}/>
+            {backendStatus === 'ok' ? 'Backend OK' : backendStatus === 'error' ? 'Backend ERROR' : 'Connecting...'}
+          </div>
+
+          <div className="live-badge">
+            <span className="live-dot"/>
+            Open-Meteo LIVE
+          </div>
+
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowDisclaimer(p=>!p)}
+            style={{fontSize:11}}>
+            ℹ️ دقة البيانات
+          </button>
+
+          <div style={{fontSize:11,color:'var(--tx-3)',fontFamily:'JetBrains Mono',
+            padding:'3px 9px',background:'var(--bg-2)',borderRadius:6,border:'1px solid var(--bd)'}}>
+            {new Date().toLocaleTimeString('ar-TN',{hour:'2-digit',minute:'2-digit'})} TUN
+          </div>
         </div>
-        <div style="color:var(--green);font-weight:700;font-size:12px;min-width:52px;text-align:center">${r.excellent_total>0?`⭐${r.excellent_total}`:'—'}</div>
-        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();fetchForecast(${JSON.stringify(r.spot).replace(/"/g,'&quot;')})">🔍</button>
-      </div>`).join('')}
-    <div style="margin-top:10px;padding:8px 12px;background:rgba(14,165,233,.04);border-radius:6px;font-size:10px;color:var(--tx3);font-family:var(--mono)">
-      ✅ تم تحليل ${sf(bd.total_spots_analyzed)} موقع · Score: 1=ممتاز ✅ | 2=ممكن | 3=صعب ⚠️ | 4=مستحيل ⛔
-    </div>
-  </div>`;
+      </nav>
 
-  html+=buildDisclaimer();
+      {/* DISCLAIMER BANNER */}
+      {showDisclaimer && (
+        <div style={{background:'var(--bg-1)',borderBottom:'1px solid var(--bd)',padding:'12px 24px'}}>
+          <ReliabilityFooter />
+        </div>
+      )}
 
-  $('best-result').innerHTML=html;
-  show('best-result');
-}
+      {/* LAYOUT */}
+      <div className="layout">
 
-/* ── Navigate to spot from golden window ── */
-function goToSpotWindow(spotId, winData){
-  if(typeof winData==='string') try{ winData=JSON.parse(winData); }catch{}
-  const spot=[...state.spots,...state.customSpots].find(s=>s.id===spotId)
-    || {id:spotId,name:winData.spot_name,name_en:winData.spot_name,lat:winData.lat,lon:winData.lon,beach_angle:90,region:winData.region||''};
-  fetchForecast(spot);
-}
+        {/* ═══════════ SIDEBAR ═══════════ */}
+        <aside className="sidebar">
 
-/* ═══════════════════════════════════════════════════════════════
-   HTML BUILDER HELPERS
-   ═══════════════════════════════════════════════════════════════ */
+          {/* MAP */}
+          <div className="card" style={{padding:0,overflow:'hidden'}}>
+            <LeafletMap
+              spots={allSpots}
+              selectedSpot={selSpot}
+              onMapClick={onMapClick}
+              onSpotSelect={fetchForecast}
+            />
+            <div className="map-hint">
+              <span>📍</span>
+              <span>انقر على الخريطة لإضافة موقع مخصص</span>
+            </div>
+          </div>
 
-function buildSeaSVG(h=0){
-  const amp=Math.min(sf(h)*13,25);
-  const col=h>2?'#ef4444':h>1.2?'#f59e0b':h>0.5?'#0ea5e9':'#22c55e';
-  return `<div class="sea">
-    <svg viewBox="0 0 400 54" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="wg2" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="${col}" stop-opacity="0.55"/>
-          <stop offset="100%" stop-color="${col}" stop-opacity="0.08"/>
-        </linearGradient>
-      </defs>
-      <path fill="url(#wg2)"
-        d="M0,${27+amp} C60,${27-amp} 120,${27+amp} 180,${27-amp*.6} C240,${27+amp*.6} 300,${27-amp} 360,${27+amp} C380,${27-amp*.4} 400,${27+amp*.4} 400,${27+amp} L400,54 L0,54 Z"/>
-      <path fill="none" stroke="${col}" stroke-width="1.5" stroke-opacity="0.65"
-        d="M0,${27+amp} C60,${27-amp} 120,${27+amp} 180,${27-amp*.6} C240,${27+amp*.6} 300,${27-amp} 360,${27+amp} C380,${27-amp*.4} 400,${27+amp*.4} 400,${27+amp}"/>
-    </svg>
-    <div class="sea-val" style="color:${col}">${sf(h).toFixed(2)}م</div>
-  </div>`;
-}
+          {/* CUSTOM SPOT FORM */}
+          {showCForm && pendingCoord && (
+            <div className="card fade-in" style={{borderColor:'rgba(14,165,233,0.4)'}}>
+              <div className="card-hdr">📌 حفظ موقع مخصص</div>
+              <div className="cform">
+                <div className="cform-coord">
+                  📍 {pendingCoord.lat}°N, {pendingCoord.lon}°E
+                </div>
+                <div>
+                  <label className="flbl">اسم الموقع (اختياري)</label>
+                  <input className="finput" placeholder="مثال: شاطئ قرمبالية" value={cName} onChange={e=>setCName(e.target.value)}/>
+                </div>
+                <div>
+                  <label className="flbl">
+                    زاوية اتجاه البحر: {cAngle}° ({degToCompass(cAngle)})
+                  </label>
+                  <input type="range" className="hslider" min="0" max="359" step="5"
+                    value={cAngle} onChange={e=>setCAngle(parseInt(e.target.value))}/>
+                  <div className="angle-preview">
+                    ℹ️ 0°=شمال · 90°=شرق · 180°=جنوب · 270°=غرب — اتجاه الشاطئ نحو البحر
+                  </div>
+                </div>
+                <div style={{display:'flex',gap:7}}>
+                  <button className="btn btn-blue" style={{flex:1}} onClick={saveCustomSpot}>
+                    💾 حفظ وتحليل
+                  </button>
+                  <button className="btn btn-ghost" onClick={()=>setShowCForm(false)}>✕</button>
+                </div>
+              </div>
+            </div>
+          )}
 
-function buildCompass(windDir=0,swellDir=0){
-  const wd=sf(windDir,0), sd=sf(swellDir,0);
-  return `<div class="compass-row">
-    <div>
-      <div class="crose">
-        <span class="crose-N">N</span>
-        <div class="crose-needle" style="background:#0ea5e9;transform:translate(-50%,-100%) rotate(${wd}deg)"></div>
-        <div class="crose-dot" style="background:#0ea5e9"></div>
+          {/* BEST SPOTS BUTTON */}
+          <button className="btn btn-green" style={{width:'100%'}}
+            onClick={fetchBest} disabled={loadingBest}>
+            {loadingBest ? '⏳ جارٍ التحليل...' : '🏆 أفضل موقع وأفضل وقت (الأيام الـ3)'}
+          </button>
+
+          {/* PREDEFINED SPOTS */}
+          <div className="card">
+            <div className="card-hdr">🗺️ مواقع السرف في تونس</div>
+            <div style={{maxHeight:280,overflowY:'auto'}}>
+              {spots.length === 0 && (
+                <div style={{color:'var(--tx-3)',fontSize:12,textAlign:'center',padding:16}}>
+                  ⏳ جارٍ تحميل المواقع...
+                </div>
+              )}
+              {spots.map(s => (
+                <div key={s.id}
+                  className={`spot-item ${selSpot?.id === s.id ? 'active' : ''}`}
+                  onClick={() => fetchForecast(s)}>
+                  <div className="spot-ar">{s.name}</div>
+                  <div className="spot-en">{s.name_en}</div>
+                  <div className="spot-meta">{s.region} · {s.beach_angle}° {degToCompass(s.beach_angle)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* CUSTOM SPOTS */}
+          {customSpots.length > 0 && (
+            <div className="card">
+              <div className="card-hdr">📌 مواقعي المحفوظة ({customSpots.length})</div>
+              {customSpots.map(s => (
+                <div key={s.id}
+                  style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:5}}>
+                  <div className={`spot-item ${selSpot?.id === s.id ? 'active':''}`}
+                    style={{flex:1,marginBottom:0}} onClick={() => fetchForecast(s)}>
+                    <div className="spot-ar">{s.name}</div>
+                    <div className="spot-meta">{s.lat.toFixed(3)}°N · {s.lon.toFixed(3)}°E · {s.beach_angle}°</div>
+                  </div>
+                  <button className="btn btn-ghost btn-sm" style={{marginRight:4}}
+                    onClick={() => {
+                      setCustomSpots(p => p.filter(x => x.id !== s.id));
+                      setToast({msg:'🗑️ تم حذف الموقع',type:'info'});
+                    }}>🗑️</button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* DATA SOURCES */}
+          <div className="card" style={{padding:'13px 15px'}}>
+            <div style={{fontSize:11,color:'var(--tx-3)',fontFamily:'JetBrains Mono',lineHeight:1.85}}>
+              <div style={{color:'var(--tx-2)',fontWeight:600,marginBottom:6}}>📡 مصادر البيانات</div>
+              <div>🌊 Open-Meteo Marine API (ICON Wave / DWD)</div>
+              <div>🌤️ Open-Meteo Weather Forecast API</div>
+              <div>🗺️ EU Model 5km (أيام 1-3) | Global (يوم 4+)</div>
+              <div>📅 48ساعة تاريخية + 72 ساعة توقعات</div>
+              <div style={{marginTop:7,color:'var(--c-green)}'>✅ 100% مجاني — بدون API Key</div>
+            </div>
+          </div>
+
+        </aside>
+
+        {/* ═══════════ MAIN CONTENT ═══════════ */}
+        <main style={{display:'flex',flexDirection:'column',gap:16}}>
+
+          {/* MAIN TABS */}
+          <div className="mtabs">
+            <button className={`mtab ${mainTab==='forecast'?'active':''}`}
+              onClick={() => setMainTab('forecast')}>
+              🌊 التحليل التفصيلي
+            </button>
+            <button className={`mtab ${mainTab==='best-spots'?'active':''}`}
+              onClick={() => { setMainTab('best-spots'); if (!bestData && !loadingBest) fetchBest(); }}>
+              🏆 أفضل المواقع والأوقات
+            </button>
+          </div>
+
+          {/* ERROR */}
+          {error && <div className="errbox fade-in">⚠️ {error}</div>}
+
+          {/* ══════════ TAB: FORECAST ══════════ */}
+          {mainTab === 'forecast' && (
+            <>
+              {/* Empty state */}
+              {!selSpot && !loading && (
+                <div style={{display:'flex',flexDirection:'column',alignItems:'center',
+                  justifyContent:'center',minHeight:360,gap:14,textAlign:'center'}}>
+                  <div style={{fontSize:56}}>🎣</div>
+                  <div style={{fontSize:20,fontWeight:700}}>اختر موقعاً للبدء</div>
+                  <div style={{fontSize:13,color:'var(--tx-2)',maxWidth:380,lineHeight:1.85}}>
+                    انقر على أحد المواقع الجانبية أو على الخريطة لإضافة نقطة مخصصة.
+                    سيتم تحليل آخر 48 ساعة + الـ72 ساعة القادمة.
+                  </div>
+                  <button className="btn btn-green" onClick={fetchBest} disabled={loadingBest}>
+                    🏆 أو ابدأ بعرض أفضل المواقع مباشرة
+                  </button>
+                  <ReliabilityFooter/>
+                </div>
+              )}
+
+              {/* Loading */}
+              {loading && (
+                <div className="loading">
+                  <div className="spin"/>
+                  <div className="loading-txt">⚙️ جارٍ تحليل بيانات 48ساعة تاريخية + 72ساعة توقعات...</div>
+                </div>
+              )}
+
+              {/* FORECAST RESULT */}
+              {!loading && forecast && activeDay && activeHour && (
+                <div className="fade-in">
+
+                  {/* Model accuracy notice */}
+                  {(() => {
+                    const acc = modelAccuracy(activeDay.day_offset);
+                    return (
+                      <div className="model-notice" style={{marginBottom:12,borderColor:`${acc.color}35`,color:acc.color}}>
+                        🛰️ <strong>دقة النموذج لهذا اليوم:</strong> {acc.note}
+                        {activeDay.day_offset >= 3 &&
+                          <span style={{color:'var(--c-amber)',marginRight:8}}>
+                            — البيانات مُحوَّلة من توقع كل 3 ساعات، استخدمها بحذر
+                          </span>
+                        }
+                      </div>
+                    );
+                  })()}
+
+                  {/* Historical breach alert */}
+                  {forecast.historical_breach && (
+                    <div className="breach" style={{marginBottom:12}}>
+                      <span style={{fontSize:18}}>⚠️</span>
+                      <div>
+                        <div style={{fontWeight:700,marginBottom:3}}>
+                          تحذير: اضطراب بحري مُسجَّل في الـ48 ساعة الماضية
+                        </div>
+                        <div style={{fontSize:11,lineHeight:1.7}}>
+                          أمواج فوق 1.8م مع ريح بحرية — خطر العشب البحري والحطام قائم وسيظل مرتفعاً
+                          لـ12 ساعة على الأقل بعد الحادثة الأخيرة
+                          {forecast.hours_since_breach != null &&
+                            ` (منذ ~${forecast.hours_since_breach} ساعة)`}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* VERDICT CARD */}
+                  <div className="verdict-wrap" style={{
+                    borderColor:`${activeHour.verdict?.color}45`,
+                    background: activeHour.verdict?.bg_color,
+                    color: activeHour.verdict?.color,
+                    marginBottom:14
+                  }}>
+                    <div style={{display:'flex',alignItems:'flex-start',gap:18,flexWrap:'wrap'}}>
+                      <div>
+                        <div className="v-emoji">{activeHour.verdict?.emoji}</div>
+                        <div className="v-label" style={{color:activeHour.verdict?.color}}>
+                          {activeHour.verdict?.verdict}
+                        </div>
+                        <div className="v-stars">{renderStars(activeHour.verdict?.stars ?? 0)}</div>
+                        <div className="v-meta" style={{marginTop:8}}>
+                          {forecast.spot?.name} · {activeDay.day_label} · {fmtTime(activeHour.time)}
+                        </div>
+                      </div>
+                      <div style={{flex:1,minWidth:180}}>
+                        <SeaViz h={safe(activeHour.wave_height, safe(activeHour.swell_height))} />
+                        <div style={{marginTop:10}}>
+                          <Compass
+                            windDir={activeHour.wind_direction}
+                            swellDir={activeHour.swell_direction}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Arabic explanation */}
+                    {activeHour.arabic_explanation && (
+                      <div className="v-expl" style={{borderRightColor:activeHour.verdict?.color}}>
+                        {activeHour.arabic_explanation}
+                      </div>
+                    )}
+
+                    {/* Mediterranean note on wave period */}
+                    <div style={{
+                      marginTop:10, padding:'7px 12px',
+                      background:'rgba(0,0,0,0.25)', borderRadius:6,
+                      fontSize:11, color:'var(--tx-3)', fontFamily:'JetBrains Mono'
+                    }}>
+                      ℹ️ دورة الأمواج في المتوسط: {safe(activeHour.swell_period,0).toFixed(1)}ث
+                      {safe(activeHour.swell_period,0) > 9
+                        ? ' — نادرة ومؤثرة جداً في المتوسط ⚠️'
+                        : safe(activeHour.swell_period,0) > 6
+                          ? ' — متوسطة (مناسبة للسرف)'
+                          : ' — قصيرة (ريح محلية)'}
+                      &nbsp;|&nbsp;
+                      {activeHour.wind_classification?.label}
+                    </div>
+                  </div>
+
+                  {/* DAY TABS */}
+                  <div className="card" style={{marginBottom:14}}>
+                    <div className="card-hdr">📅 اختيار اليوم (الأيام القادمة)</div>
+                    <div className="dtabs">
+                      {(forecast.days || []).map((d, i) => {
+                        const acc = modelAccuracy(d.day_offset);
+                        return (
+                          <button key={i}
+                            className={`dtab ${dayIdx===i?'active':''}`}
+                            onClick={()=>{setDayIdx(i);setHourIdx(0);}}>
+                            {d.day_label}
+                            <span className="dtab-sub">{d.date}</span>
+                            <span className="dtab-badge" style={{
+                              background: dayIdx===i ? 'rgba(255,255,255,0.15)' : `${sColor(d.avg_verdict_score)}18`,
+                              color: dayIdx===i ? 'white' : sColor(d.avg_verdict_score)
+                            }}>
+                              {d.excellent_count > 0 ? `⭐${d.excellent_count}` : `~${safe(d.avg_verdict_score).toFixed(1)}`}
+                            </span>
+                            <span style={{
+                              display:'block', fontSize:8, marginTop:2,
+                              color: dayIdx===i ? 'rgba(255,255,255,0.6)' : acc.color,
+                              fontFamily:'JetBrains Mono'
+                            }}>{acc.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Best window for this day */}
+                    {activeDay.best_window && (
+                      <div style={{
+                        marginTop:11, padding:'9px 13px',
+                        background:'rgba(34,197,94,0.07)',
+                        border:'1px solid rgba(34,197,94,0.25)',
+                        borderRadius:7, display:'flex', alignItems:'center', gap:9
+                      }}>
+                        <span style={{fontSize:18}}>⏰</span>
+                        <div>
+                          <div style={{fontSize:12,fontWeight:700,color:'var(--c-green)'}}>
+                            أفضل نافذة زمنية لهذا اليوم
+                          </div>
+                          <div style={{fontSize:11,color:'var(--tx-2)',fontFamily:'JetBrains Mono',marginTop:2}}>
+                            {activeDay.best_window.label}
+                            &nbsp;·&nbsp; avg score: {safe(activeDay.best_window.avg_score).toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* HOUR TIMELINE + SLIDER */}
+                  <div className="card" style={{marginBottom:14}}>
+                    <div className="card-hdr">⏱️ جدول الساعات — اضغط أو حرّك السلايدر</div>
+
+                    {/* Chips */}
+                    <div className="htl">
+                      {(activeDay.hours || []).map((h, i) => (
+                        <div key={i}
+                          className={`hchip ${hourIdx===i?'sel':''}`}
+                          style={{
+                            borderColor:`${h.verdict?.color}50`,
+                            background: hourIdx===i ? `${h.verdict?.color}18` : 'var(--bg-1)',
+                            color: h.verdict?.color,
+                            boxShadow: hourIdx===i ? `0 0 12px ${h.verdict?.color}35` : 'none'
+                          }}
+                          onClick={()=>setHourIdx(i)}>
+                          <div className="hchip-t">{fmtTime(h.time)}</div>
+                          <div className="hchip-e">{h.verdict?.emoji}</div>
+                          <div className="hchip-s">{safe(h.wave_height,safe(h.swell_height)).toFixed(1)}م</div>
+                          <div className="hchip-w">{safe(h.wind_speed_kmh).toFixed(0)}كم/س</div>
+                          {/* Model accuracy micro-tag */}
+                          <div className="hchip-model" style={{
+                            color: (h.day_offset??0) <= 2 ? '#22c55e' : '#f59e0b'
+                          }}>
+                            {(h.day_offset??0) <= 2 ? '5km' : 'GLB'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Slider */}
+                    <div className="slider-wrap" style={{marginTop:11}}>
+                      <input type="range" className="hslider"
+                        min="0"
+                        max={Math.max(0,(activeDay.hours||[]).length-1)}
+                        value={hourIdx}
+                        onChange={e=>setHourIdx(+e.target.value)}/>
+                      <div className="slider-lbls">
+                        <span>00:00</span><span>06:00</span>
+                        <span>12:00</span><span>18:00</span><span>23:00</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* RISK GRID */}
+                  <div className="card" style={{marginBottom:14}}>
+                    <div className="card-hdr">🛡️ لوحة المخاطر</div>
+                    <div className="rg">
+
+                      {/* Seaweed */}
+                      <div className="rc" style={{borderColor:`${activeHour.seaweed_risk?.color}35`}}>
+                        <div className="rc-icon">{activeHour.seaweed_risk?.emoji}</div>
+                        <div className="rc-ttl">أعشاب / حطام</div>
+                        <div className="rc-lbl" style={{color:activeHour.seaweed_risk?.color}}>
+                          {activeHour.seaweed_risk?.label}
+                        </div>
+                        {activeHour.seaweed_risk?.persistence_active &&
+                          <div className="rc-warn">⏳ تأثير 48ساعة نشط</div>}
+                      </div>
+
+                      {/* Rip current */}
+                      <div className="rc" style={{borderColor:`${activeHour.rip_current_risk?.color}35`}}>
+                        <div className="rc-icon">{activeHour.rip_current_risk?.emoji}</div>
+                        <div className="rc-ttl">تيار رجعي</div>
+                        <div className="rc-lbl" style={{color:activeHour.rip_current_risk?.color}}>
+                          {activeHour.rip_current_risk?.label}
+                        </div>
+                        <div className="rc-warn" style={{background:'transparent',color:'var(--tx-3)',fontFamily:'JetBrains Mono'}}>
+                          ≈{safe(activeHour.swell_period).toFixed(1)}ث / {activeHour.swell_classification?.label}
+                        </div>
+                      </div>
+
+                      {/* Wind */}
+                      <div className="rc" style={{borderColor:`${activeHour.wind_danger?.color}35`}}>
+                        <div className="rc-icon">{activeHour.wind_danger?.emoji}</div>
+                        <div className="rc-ttl">ريح / رمي</div>
+                        <div className="rc-lbl" style={{color:activeHour.wind_danger?.color}}>
+                          {activeHour.wind_danger?.label}
+                        </div>
+                        <div className="rc-det">{activeHour.wind_danger?.detail}</div>
+                      </div>
+
+                      {/* Tide — with explicit approximation warning */}
+                      <div className="rc">
+                        <div className="rc-icon">
+                          {activeHour.tide_phase?.phase === 'low' ? '🌊⬇️'
+                            : activeHour.tide_phase?.phase === 'high' ? '🌊⬆️' : '🌊'}
+                        </div>
+                        <div className="rc-ttl">مد / جزر</div>
+                        <div className="rc-lbl" style={{color:'var(--c-blue)'}}>
+                          {activeHour.tide_phase?.label}
+                        </div>
+                        <div className="tidebar">
+                          <div className="tidebar-fill" style={{
+                            width:`${Math.max(5,((safe(activeHour.tide_phase?.level,0)+1)/2)*100)}%`,
+                            background:'var(--c-blue)'
+                          }}/>
+                        </div>
+                        <div className="rc-warn" style={{
+                          background:'rgba(168,85,247,0.1)',color:'var(--c-purple)'
+                        }}>
+                          ⚠️ تقريب رياضي
+                        </div>
+                      </div>
+
+                      {/* Pressure */}
+                      <div className="rc">
+                        <div className="rc-icon">
+                          {activeHour.pressure_trend?.fishing_bonus ? '📉' :
+                           activeHour.pressure_trend?.trend?.includes('rising') ? '📈' : '📊'}
+                        </div>
+                        <div className="rc-ttl">ضغط جوي</div>
+                        <div className="rc-lbl" style={{
+                          color: activeHour.pressure_trend?.fishing_bonus ? 'var(--c-green)' : 'var(--tx-2)',
+                          fontSize:12
+                        }}>
+                          {activeHour.pressure_trend?.label}
+                        </div>
+                        <div className="rc-det">
+                          {safe(activeHour.pressure_hpa).toFixed(0)} hPa
+                          &nbsp;({activeHour.pressure_trend?.delta > 0 ? '+' : ''}{safe(activeHour.pressure_trend?.delta).toFixed(1)})
+                        </div>
+                      </div>
+
+                      {/* Wind direction */}
+                      <div className="rc">
+                        <div className="rc-icon">{activeHour.wind_classification?.emoji}</div>
+                        <div className="rc-ttl">اتجاه الريح</div>
+                        <div className="rc-lbl" style={{color:'var(--c-cyan)',fontSize:12}}>
+                          {activeHour.wind_classification?.label}
+                        </div>
+                        <div className="rc-det">
+                          {degToCompass(activeHour.wind_direction)} {Math.round(safe(activeHour.wind_direction))}°
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                  {/* METRICS */}
+                  <div className="card" style={{marginBottom:14}}>
+                    <div className="card-hdr">📊 مقاييس البحر الخام (Raw Data)</div>
+                    <div className="mg">
+                      <div className="mb">
+                        <div className="mb-lbl">موج كلي (Hm0)</div>
+                        <div className="mb-val">{safe(activeHour.wave_height,safe(activeHour.swell_height)).toFixed(2)}</div>
+                        <div className="mb-unit">متر — المؤشر الرئيسي ✅</div>
+                      </div>
+                      <div className="mb">
+                        <div className="mb-lbl">موج ريحي (Wind Wave)</div>
+                        <div className="mb-val" style={{color:'var(--c-amber)'}}>{safe(activeHour.wind_wave_height).toFixed(2)}</div>
+                        <div className="mb-unit">متر — السائد في المتوسط</div>
+                      </div>
+                      <div className="mb">
+                        <div className="mb-lbl">دورة الأمواج</div>
+                        <div className="mb-val" style={{color:'var(--c-green)'}}>{safe(activeHour.swell_period).toFixed(1)}</div>
+                        <div className="mb-unit">ثانية | [المتوسط: 4-9ث]</div>
+                      </div>
+                      <div className="mb">
+                        <div className="mb-lbl">دورة الذروة</div>
+                        <div className="mb-val" style={{color:'var(--c-purple)'}}>{safe(activeHour.swell_peak_period,safe(activeHour.swell_period)).toFixed(1)}</div>
+                        <div className="mb-unit">ثانية (Peak Period)</div>
+                      </div>
+                      <div className="mb">
+                        <div className="mb-lbl">سرعة الريح</div>
+                        <div className="mb-val" style={{color:'var(--c-amber)'}}>{safe(activeHour.wind_speed_kmh).toFixed(1)}</div>
+                        <div className="mb-unit">كم/ساعة</div>
+                      </div>
+                      <div className="mb">
+                        <div className="mb-lbl">هبّة الريح</div>
+                        <div className="mb-val" style={{color:'var(--c-red)'}}>{safe(activeHour.wind_gust_kmh).toFixed(1)}</div>
+                        <div className="mb-unit">كم/ساعة (Gust)</div>
+                      </div>
+                      <div className="mb">
+                        <div className="mb-lbl">الحرارة</div>
+                        <div className="mb-val" style={{color:'var(--c-orange)'}}>{safe(activeHour.temperature_c).toFixed(1)}</div>
+                        <div className="mb-unit">°مئوية</div>
+                      </div>
+                      <div className="mb">
+                        <div className="mb-lbl">احتمال أمطار</div>
+                        <div className="mb-val" style={{color: safe(activeHour.precipitation_probability)>50?'var(--c-red)':'var(--tx-2)'}}>
+                          {safe(activeHour.precipitation_probability)}
+                        </div>
+                        <div className="mb-unit">%</div>
+                      </div>
+                      <div className="mb">
+                        <div className="mb-lbl">تغطية سحابية</div>
+                        <div className="mb-val" style={{color:'var(--tx-2)'}}>{safe(activeHour.cloud_cover)}</div>
+                        <div className="mb-unit">% (Cloud Cover)</div>
+                      </div>
+                      <div className="mb">
+                        <div className="mb-lbl">ضغط جوي</div>
+                        <div className="mb-val" style={{color:'var(--c-blue)'}}>{safe(activeHour.pressure_hpa).toFixed(0)}</div>
+                        <div className="mb-unit">hPa</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SINKER */}
+                  <div className="card" style={{marginBottom:14}}>
+                    <div className="card-hdr">⚓ توصية الثقل (السينكر)</div>
+                    <SinkerCard s={activeHour.sinker_recommendation}/>
+                  </div>
+
+                  {/* FISH */}
+                  <div className="card" style={{marginBottom:14}}>
+                    <div className="card-hdr">🐟 أسماك محتملة (بناءً على الظروف)</div>
+                    <div>
+                      {predictFish(
+                        activeHour.wave_height ?? activeHour.swell_height,
+                        activeHour.swell_period,
+                        activeHour.wind_classification,
+                        activeHour.temperature_c
+                      ).map((f,i)=>(
+                        <span key={i} className="fish-chip">
+                          {f.emoji} {f.name}
+                          <span className="fish-chance" style={{
+                            background:`${f.chanceColor}18`, color:f.chanceColor
+                          }}>{f.chance}</span>
+                        </span>
+                      ))}
+                    </div>
+                    <div style={{marginTop:9,fontSize:11,color:'var(--tx-3)',lineHeight:1.7}}>
+                      ℹ️ التوقعات استرشادية بناءً على الظروف والموسم. الأسماء بالإنجليزية: {
+                        predictFish(activeHour.wave_height??activeHour.swell_height,activeHour.swell_period,activeHour.wind_classification,activeHour.temperature_c)
+                          .map(f=>f.nameEn).join(' · ')
+                      }
+                    </div>
+                  </div>
+
+                  {/* 3-DAY SUMMARY TABLE */}
+                  <div className="card" style={{marginBottom:14}}>
+                    <div className="card-hdr">📋 ملخص الـ3 أيام — انقر لتغيير اليوم</div>
+                    <div style={{overflowX:'auto'}}>
+                      <table className="ftable">
+                        <thead>
+                          <tr>
+                            {['اليوم','التاريخ','أفضل نافذة','أفضل حكم','متوسط','ممتاز','دقة النموذج'].map(h=>(
+                              <th key={h}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(forecast.days||[]).map((d,i) => {
+                            const acc = modelAccuracy(d.day_offset);
+                            return (
+                              <tr key={i}
+                                className={dayIdx===i?'active-row':''}
+                                onClick={()=>{setDayIdx(i);setHourIdx(0);}}>
+                                <td style={{fontWeight:600}}>{d.day_label}</td>
+                                <td style={{fontSize:11,color:'var(--tx-3)',fontFamily:'JetBrains Mono'}}>{d.date}</td>
+                                <td style={{fontSize:11,color:'var(--c-cyan)',fontFamily:'JetBrains Mono'}}>
+                                  {d.best_window?.label || '--'}
+                                </td>
+                                <td>
+                                  <span style={{color:d.best_hour?.verdict?.color,fontSize:12,fontWeight:700}}>
+                                    {d.best_hour?.verdict?.verdict || '--'}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span className={`spill ${sBgClass(d.avg_verdict_score)} ${sClass(d.avg_verdict_score)}`}>
+                                    {safe(d.avg_verdict_score).toFixed(2)}
+                                  </span>
+                                </td>
+                                <td style={{textAlign:'center',color:d.excellent_count>0?'var(--c-green)':'var(--tx-3)',fontWeight:700}}>
+                                  {d.excellent_count > 0 ? `⭐ ${d.excellent_count}ساعة` : '—'}
+                                </td>
+                                <td>
+                                  <span style={{fontSize:10,color:acc.color,fontFamily:'JetBrains Mono'}}>
+                                    {acc.label}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* RELIABILITY FOOTER */}
+                  <ReliabilityFooter/>
+
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ══════════ TAB: BEST SPOTS ══════════ */}
+          {mainTab === 'best-spots' && (
+            <>
+              {loadingBest && (
+                <div className="loading">
+                  <div className="spin"/>
+                  <div className="loading-txt">
+                    🔍 جارٍ تحليل {spots.length + customSpots.length} موقع بالتوازي...
+                  </div>
+                  <div style={{fontSize:11,color:'var(--tx-3)',textAlign:'center',maxWidth:320,lineHeight:1.7}}>
+                    يستغرق التحليل الكامل 15-30 ثانية. قد يكون الخادم في سبات (Render Free Tier) — الأول قد يأخذ 60 ثانية.
+                  </div>
+                </div>
+              )}
+
+              {!loadingBest && bestData && (
+                <div className="fade-in">
+
+                  {/* BEST SPOT NOW */}
+                  {bestData.best_spot_now?.spot && (
+                    <div className="card glow-g" style={{
+                      marginBottom:16, borderColor:'#22c55e',
+                      background:'rgba(34,197,94,0.04)'
+                    }}>
+                      <div style={{
+                        fontSize:10, color:'var(--c-green)',
+                        fontFamily:'JetBrains Mono', letterSpacing:2,
+                        marginBottom:10, display:'flex', alignItems:'center', gap:8
+                      }}>
+                        <span style={{
+                          background:'var(--c-green)', borderRadius:4,
+                          padding:'1px 7px', color:'white', fontSize:9
+                        }}>🔴 LIVE</span>
+                        أفضل موقع للصيد الآن
+                        <span style={{marginRight:'auto',fontSize:9,color:'var(--tx-3)'}}>
+                          من {bestData.total_spots_analyzed} موقع محلَّل
+                        </span>
+                      </div>
+
+                      <div style={{display:'flex',alignItems:'flex-start',gap:14,flexWrap:'wrap'}}>
+                        <div style={{fontSize:38}}>🏆</div>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:20,fontWeight:800,color:'var(--c-green)'}}>
+                            {bestData.best_spot_now.spot.name}
+                          </div>
+                          <div style={{fontSize:12,color:'var(--tx-3)',marginTop:3,fontFamily:'JetBrains Mono'}}>
+                            {bestData.best_spot_now.spot.name_en} · {bestData.best_spot_now.spot.region}
+                          </div>
+
+                          {bestData.best_spot_now.current && (
+                            <div style={{display:'flex',gap:8,marginTop:10,flexWrap:'wrap'}}>
+                              <span style={{
+                                padding:'3px 11px',
+                                background:`${bestData.best_spot_now.current.verdict?.color}18`,
+                                border:`1px solid ${bestData.best_spot_now.current.verdict?.color}45`,
+                                borderRadius:6, fontSize:13, fontWeight:700,
+                                color:bestData.best_spot_now.current.verdict?.color
+                              }}>
+                                {bestData.best_spot_now.current.verdict?.verdict}
+                              </span>
+                              <span style={{
+                                padding:'3px 11px',
+                                background:'rgba(14,165,233,0.09)',
+                                border:'1px solid rgba(14,165,233,0.25)',
+                                borderRadius:6, fontSize:12,
+                                color:'var(--c-blue)', fontFamily:'JetBrains Mono'
+                              }}>
+                                🌊 {safe(bestData.best_spot_now.current.wave_height ?? bestData.best_spot_now.current.swell_height).toFixed(2)}م
+                                / {safe(bestData.best_spot_now.current.swell_period).toFixed(1)}ث
+                              </span>
+                              <span style={{
+                                padding:'3px 11px',
+                                background:'rgba(245,158,11,0.09)',
+                                border:'1px solid rgba(245,158,11,0.25)',
+                                borderRadius:6, fontSize:12,
+                                color:'var(--c-amber)', fontFamily:'JetBrains Mono'
+                              }}>
+                                💨 {safe(bestData.best_spot_now.current.wind_speed_kmh).toFixed(0)} كم/س
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <button className="btn btn-blue"
+                          onClick={()=>fetchForecast(bestData.best_spot_now.spot)}>
+                          🔍 تفاصيل كاملة
+                        </button>
+                      </div>
+
+                      {bestData.best_spot_now.arabic_explanation && (
+                        <div style={{
+                          marginTop:12, padding:'11px 14px',
+                          background:'rgba(0,0,0,0.3)', borderRadius:7,
+                          borderRight:'3px solid var(--c-green)',
+                          fontSize:12, color:'var(--tx-2)', lineHeight:1.85
+                        }}>
+                          {bestData.best_spot_now.arabic_explanation}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* GOLDEN WINDOWS */}
+                  <div className="card" style={{marginBottom:16}}>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+                      <div className="card-hdr" style={{margin:0}}>⏰ النوافذ الذهبية للصيد (الأيام الـ3)</div>
+                      <div style={{fontSize:11,color:'var(--tx-3)',fontFamily:'JetBrains Mono'}}>
+                        {bestData.golden_windows?.length || 0} فرصة
+                      </div>
+                    </div>
+
+                    {/* Model accuracy note for best-spots */}
+                    <div className="model-notice" style={{marginBottom:12}}>
+                      🛰️ النوافذ في أيام 1-3: نموذج EU 5km دقيق ✅ | يوم 4+: نموذج عالمي ⚠️ استخدم بحذر
+                    </div>
+
+                    {(!bestData.golden_windows || bestData.golden_windows.length === 0) && (
+                      <div style={{textAlign:'center',padding:'28px 16px',color:'var(--tx-3)',fontSize:13}}>
+                        🌪️ لا توجد نوافذ ذهبية في الـ3 أيام القادمة — الظروف صعبة عموماً على جميع المواقع
+                      </div>
+                    )}
+
+                    {(bestData.golden_windows || []).map((w,i) => (
+                      <GWRow key={i} w={w} idx={i}
+                        onSelect={w => {
+                          const sp = allSpots.find(s => s.id === w.spot_id);
+                          if (sp) fetchForecast(sp);
+                          else fetchForecast({ id:w.spot_id, name:w.spot_name, lat:w.lat, lon:w.lon, beach_angle:90, region:w.region||'' });
+                        }}/>
+                    ))}
+                  </div>
+
+                  {/* SPOT RANKINGS */}
+                  <div className="card" style={{marginBottom:16}}>
+                    <div className="card-hdr">📊 ترتيب جميع المواقع (متوسط الـ3 أيام)</div>
+                    {(bestData.spot_rankings || []).map((r,i) => (
+                      <div key={i} className="rank-row"
+                        onClick={() => fetchForecast(r.spot)}>
+                        <div style={{
+                          fontSize:18, fontWeight:700, minWidth:30, textAlign:'center',
+                          color: i===0?'#ffd700':i===1?'#c0c0c0':i===2?'#cd7f32':'var(--tx-3)'
+                        }}>
+                          {i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}`}
+                        </div>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:13,fontWeight:600}}>{r.spot.name}</div>
+                          <div style={{display:'flex',gap:7,marginTop:3,flexWrap:'wrap'}}>
+                            <span style={{fontSize:10,color:'var(--tx-3)'}}>{r.spot.region}</span>
+                            <span style={{fontSize:10,color:'var(--c-cyan)',fontFamily:'JetBrains Mono'}}>
+                              أفضل يوم: {r.best_day}
+                            </span>
+                            {r.historical_breach &&
+                              <span style={{fontSize:10,color:'var(--c-amber)'}}>⚠️ اضطراب سابق</span>}
+                          </div>
+                        </div>
+                        <div style={{textAlign:'center',minWidth:65}}>
+                          <div style={{fontSize:14,fontWeight:700,fontFamily:'JetBrains Mono',color:sColor(r.avg_score)}}>
+                            {safe(r.avg_score).toFixed(2)}
+                          </div>
+                          <div style={{fontSize:9,color:'var(--tx-3)'}}>avg</div>
+                        </div>
+                        <div style={{color:'var(--c-green)',fontWeight:700,fontSize:12,minWidth:55,textAlign:'center'}}>
+                          {r.excellent_total > 0 ? `⭐ ${r.excellent_total}` : '—'}
+                        </div>
+                        <button className="btn btn-ghost btn-sm"
+                          onClick={e=>{e.stopPropagation();fetchForecast(r.spot);}}>
+                          🔍
+                        </button>
+                      </div>
+                    ))}
+
+                    <div style={{
+                      marginTop:11, padding:'9px 13px',
+                      background:'rgba(14,165,233,0.04)', borderRadius:6,
+                      fontSize:10, color:'var(--tx-3)', fontFamily:'JetBrains Mono'
+                    }}>
+                      ✅ تم تحليل {bestData.total_spots_analyzed} موقع · Score: 1=ممتاز ✅ | 2=ممكن | 3=صعب ⚠️ | 4=مستحيل ⛔
+                    </div>
+                  </div>
+
+                  <ReliabilityFooter/>
+
+                </div>
+              )}
+
+              {!loadingBest && !bestData && !error && (
+                <div style={{textAlign:'center',padding:'56px 20px'}}>
+                  <div style={{fontSize:44,marginBottom:14}}>🏆</div>
+                  <div style={{fontSize:15,color:'var(--tx-2)',marginBottom:12}}>
+                    اضغط لتحليل جميع المواقع ومقارنة الـ3 أيام
+                  </div>
+                  <button className="btn btn-green" onClick={fetchBest}>
+                    🔍 ابدأ التحليل الشامل
+                  </button>
+                  <ReliabilityFooter/>
+                </div>
+              )}
+            </>
+          )}
+
+        </main>
       </div>
-      <div class="crose-lbl">ريح</div>
-      <div class="crose-val" style="color:#0ea5e9">${degToCompass(wd)} ${Math.round(wd)}°</div>
+
+      {/* TOAST */}
+      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
     </div>
-    <div>
-      <div class="crose">
-        <span class="crose-N">N</span>
-        <div class="crose-needle" style="background:#22c55e;transform:translate(-50%,-100%) rotate(${sd}deg)"></div>
-        <div class="crose-dot" style="background:#22c55e"></div>
-      </div>
-      <div class="crose-lbl">أمواج</div>
-      <div class="crose-val" style="color:#22c55e">${degToCompass(sd)} ${Math.round(sd)}°</div>
-    </div>
-  </div>`;
+  );
 }
 
-function buildFishChips(waveH, wavePer, windCls, tempC){
-  const month=new Date().getMonth()+1;
-  const fish=[];
-  const h=sf(waveH), p=sf(wavePer,5), t=sf(tempC,20), wt=windCls?.type||'offshore';
-
-  if(h>0.4&&h<1.8&&(wt==='offshore'||wt==='side_offshore'))
-    fish.push({n:'قروس / لوبين',e:'🐟',c:'#22c55e',ch:'عالي'});
-  if(h<1.2&&wt!=='onshore')
-    fish.push({n:'سرغ',e:'🐠',c:'#3b82f6',ch:'متوسط'});
-  if(t>18&&h<0.9)
-    fish.push({n:'دنيس',e:'🐡',c:'#3b82f6',ch:'متوسط'});
-  if(h>1.0||wt==='onshore')
-    fish.push({n:'مورين / أنقليس',e:'🐍',c:'#f59e0b',ch:'متوسط'});
-  if((month>=3&&month<=5)||(month>=9&&month<=11))
-    fish.push({n:'موسى (Sole)',e:'🦈',c:'#a855f7',ch:'موسمي'});
-  if(!fish.length) fish.push({n:'سباغيتي (Goatfish)',e:'🐠',c:'#8ab4d4',ch:'—'});
-
-  return fish.slice(0,4).map(f=>`
-    <span class="fish-chip">
-      ${f.e} ${esc(f.n)}
-      <span class="fish-chance" style="background:${f.c}18;color:${f.c}">${f.ch}</span>
-    </span>`).join('');
-}
-
-function buildDisclaimer(){
-  return `<div class="disclaimer">
-    <div class="disclaimer-ttl">⚠️ حدود دقة النظام — مرجع مساعد فقط</div>
-    <div class="disclaimer-item"><span class="di-icon">🌊</span><span>ارتفاع الأمواج: ±20-30%. النموذج الأوروبي 5كم (أيام 1-3)، بعده نموذج عالمي أقل دقة</span></div>
-    <div class="disclaimer-item"><span class="di-icon">🌊</span><span>المد في تونس ≈ 0.2-0.4م فقط. الخوارزمية هارمونية تقريبية (±20 دقيقة)</span></div>
-    <div class="disclaimer-item"><span class="di-icon">🌀</span><span>التيارات الرجعية محتسبة من نماذج، ليست قياسات مباشرة — تحقق بصرياً دائماً</span></div>
-    <div class="disclaimer-item"><span class="di-icon">📊</span><span>دورة الأمواج في المتوسط: 4-9 ثانية عادةً. العتبات معيّرة للمتوسط</span></div>
-  </div>`;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   BOOTSTRAP
-   ═══════════════════════════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', ()=>{
-  checkHealth();
-  loadSpots();
-});
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
