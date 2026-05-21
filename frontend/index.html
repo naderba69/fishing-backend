@@ -1,250 +1,2130 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>المرشد التكتيكي لصيد السورفكاستينغ بتونس</title>
-    <!-- مكتبة الخرائط Leaflet -->
-    <link rel="stylesheet" href="https://unpkg.com" />
-    <script src="https://unpkg.com"></script>
-    <style>
-        :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --text-color: #f8fafc;
-            --accent-color: #38bdf8;
-            --success: #22c55e;
-            --warning: #eab308;
-            --danger: #ef4444;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 10px;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        h1 {
-            text-align: center;
-            color: var(--accent-color);
-            font-size: 1.5rem;
-            margin-bottom: 15px;
-        }
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-        }
-        select, button {
-            width: 100%;
-            padding: 12px;
-            margin-top: 8px;
-            border-radius: 8px;
-            border: 1px solid #475569;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-size: 1rem;
-        }
-        button {
-            background-color: var(--accent-color);
-            color: #0f172a;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-            transition: 0.3s;
-        }
-        button:hover { background-color: #0ea5e9; }
-        #map {
-            height: 300px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            z-index: 1;
-        }
-        .verdict-box {
-            text-align: center;
-            font-size: 1.8rem;
-            font-weight: bold;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 10px;
-        }
-        .risk-meters {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        .risk-card {
-            text-align: center;
-            padding: 10px;
-            border-radius: 8px;
-            background: #334155;
-            font-size: 0.85rem;
-        }
-        .risk-val { font-weight: bold; margin-top: 5px; }
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            background: #475569;
-            margin: 2px;
-        }
-        .status-none { color: var(--success); }
-        .status-low { color: #60a5fa; }
-        .status-high { color: var(--warning); }
-        .status-confirmed { color: var(--danger); }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SurfCast Tunisia 🎣 | صيد السرف في تونس</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- React & Babel (CDN) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       DESIGN SYSTEM — MILITARY TACTICAL DARK THEME
+    ═══════════════════════════════════════════════════════════ */
+    :root {
+      --bg-primary:    #050b14;
+      --bg-secondary:  #0a1628;
+      --bg-card:       #0d1e36;
+      --bg-card-hover: #112244;
+      --bg-input:      #091525;
+      --border:        #1a3a5c;
+      --border-bright: #1e4d7b;
+      --accent-blue:   #0ea5e9;
+      --accent-cyan:   #06b6d4;
+      --accent-green:  #22c55e;
+      --accent-amber:  #f59e0b;
+      --accent-red:    #ef4444;
+      --accent-purple: #a855f7;
+      --text-primary:  #e2f0ff;
+      --text-secondary:#8ab4d4;
+      --text-muted:    #4a7090;
+      --font-arabic:   'IBM Plex Sans Arabic', sans-serif;
+      --font-mono:     'JetBrains Mono', monospace;
+      --glow-blue:     0 0 20px rgba(14,165,233,0.3);
+      --glow-green:    0 0 20px rgba(34,197,94,0.3);
+      --glow-red:      0 0 20px rgba(239,68,68,0.3);
+      --radius:        12px;
+      --radius-sm:     8px;
+      --transition:    all 0.2s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      font-family: var(--font-arabic);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+
+    /* ── Grid Background ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(14,165,233,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(14,165,233,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    /* ── Top Gradient Orb ── */
+    body::after {
+      content: '';
+      position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 400px; z-index: 0;
+      background: radial-gradient(ellipse, rgba(14,165,233,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    #root { position: relative; z-index: 1; }
+
+    /* ── Navbar ── */
+    .navbar {
+      background: rgba(5,11,20,0.9);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 1000;
+    }
+
+    .navbar-brand {
+      display: flex; align-items: center; gap: 12px;
+    }
+
+    .navbar-logo {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      box-shadow: var(--glow-blue);
+    }
+
+    .navbar-title {
+      font-size: 18px; font-weight: 700;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      letter-spacing: 0.5px;
+    }
+
+    .navbar-subtitle {
+      font-size: 11px; color: var(--text-muted);
+      font-family: var(--font-mono);
+      letter-spacing: 2px; text-transform: uppercase;
+    }
+
+    .navbar-status {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent-green);
+      animation: pulse-green 2s infinite;
+    }
+
+    @keyframes pulse-green {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+      50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(34,197,94,0); }
+    }
+
+    /* ── Layout ── */
+    .app-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 24px 20px;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 20px;
+      min-height: calc(100vh - 64px);
+    }
+
+    @media (max-width: 1024px) {
+      .app-container { grid-template-columns: 1fr; }
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      display: flex; flex-direction: column; gap: 16px;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: var(--transition);
+    }
+
+    .card:hover { border-color: var(--border-bright); }
+
+    .card-title {
+      font-size: 13px; font-weight: 600;
+      color: var(--text-secondary);
+      letter-spacing: 2px; text-transform: uppercase;
+      font-family: var(--font-mono);
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .card-title::before {
+      content: '';
+      width: 3px; height: 14px;
+      background: var(--accent-blue);
+      border-radius: 2px;
+    }
+
+    /* ── Spot List ── */
+    .spot-item {
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-bottom: 6px;
+    }
+
+    .spot-item:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border);
+    }
+
+    .spot-item.active {
+      background: rgba(14,165,233,0.1);
+      border-color: var(--accent-blue);
+      box-shadow: var(--glow-blue);
+    }
+
+    .spot-name-ar {
+      font-size: 14px; font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .spot-name-en {
+      font-size: 11px; color: var(--text-muted);
+      font-family: var(--font-mono);
+      margin-top: 2px;
+    }
+
+    .spot-region {
+      font-size: 11px; color: var(--accent-cyan);
+      margin-top: 4px;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-arabic);
+      font-size: 14px; font-weight: 600;
+      cursor: pointer; border: none;
+      transition: var(--transition);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-blue), #0077b6);
+      color: white;
+      box-shadow: 0 4px 15px rgba(14,165,233,0.3);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 20px rgba(14,165,233,0.5);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5; transform: none; cursor: not-allowed;
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--accent-green), #16a34a);
+      color: white;
+      box-shadow: 0 4px 15px rgba(34,197,94,0.3);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    /* ── Map ── */
+    #map-container {
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      height: 220px;
+    }
+
+    #leaflet-map { width: 100%; height: 100%; }
+
+    /* ── Main Content ── */
+    .main-content {
+      display: flex; flex-direction: column; gap: 20px;
+    }
+
+    /* ── Verdict Card ── */
+    .verdict-card {
+      padding: 24px;
+      border-radius: var(--radius);
+      border: 1px solid;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .verdict-card::before {
+      content: '';
+      position: absolute; top: 0; right: 0;
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, currentColor 0%, transparent 70%);
+      opacity: 0.05;
+      pointer-events: none;
+    }
+
+    .verdict-emoji { font-size: 48px; line-height: 1; }
+
+    .verdict-label {
+      font-size: 28px; font-weight: 700;
+      margin: 8px 0 4px;
+    }
+
+    .verdict-spot-name {
+      font-size: 14px; color: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .verdict-stars {
+      display: flex; gap: 4px;
+      margin-top: 8px;
+    }
+
+    .star { font-size: 16px; }
+
+    .verdict-explanation {
+      margin-top: 16px;
+      padding: 14px;
+      background: rgba(0,0,0,0.3);
+      border-radius: var(--radius-sm);
+      border-right: 3px solid currentColor;
+      font-size: 13px;
+      line-height: 1.8;
+      color: var(--text-secondary);
+    }
+
+    /* ── Risk Grid ── */
+    .risk-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .risk-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      text-align: center;
+      transition: var(--transition);
+    }
+
+    .risk-card:hover { border-color: var(--border-bright); }
+
+    .risk-icon { font-size: 24px; margin-bottom: 8px; }
+    .risk-title { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; font-family: var(--font-mono); margin-bottom: 6px; }
+    .risk-label { font-size: 15px; font-weight: 700; }
+    .risk-detail { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+    /* ── Day Tab Switcher ── */
+    .day-tabs {
+      display: flex; gap: 8px;
+      background: var(--bg-secondary);
+      padding: 6px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    .day-tab {
+      flex: 1;
+      padding: 10px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: var(--font-arabic);
+      font-size: 13px; font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: center;
+    }
+
+    .day-tab.active {
+      background: var(--accent-blue);
+      color: white;
+      box-shadow: var(--glow-blue);
+    }
+
+    .day-tab:hover:not(.active) {
+      background: var(--bg-card);
+      color: var(--text-primary);
+    }
+
+    .day-tab-score {
+      display: block;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      margin-top: 2px;
+      opacity: 0.8;
+    }
+
+    /* ── Hour Slider ── */
+    .slider-container {
+      padding: 0 4px;
+    }
+
+    .hour-slider {
+      width: 100%;
+      height: 6px;
+      -webkit-appearance: none;
+      background: var(--bg-secondary);
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .hour-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+      cursor: pointer;
+      box-shadow: var(--glow-blue);
+    }
+
+    .slider-labels {
+      display: flex; justify-content: space-between;
+      font-size: 10px; color: var(--text-muted);
+      font-family: var(--font-mono);
+      margin-top: 6px;
+    }
+
+    /* ── Hour Timeline Cards ── */
+    .hours-timeline {
+      display: flex; gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scrollbar-width: thin;
+    }
+
+    .hour-chip {
+      min-width: 72px;
+      padding: 8px;
+      border-radius: var(--radius-sm);
+      border: 1px solid;
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .hour-chip:hover { transform: translateY(-2px); }
+    .hour-chip.selected { box-shadow: 0 0 12px currentColor; }
+
+    .hour-chip-time { font-size: 12px; font-family: var(--font-mono); font-weight: 600; }
+    .hour-chip-emoji { font-size: 16px; margin: 4px 0; }
+    .hour-chip-swell { font-size: 10px; color: var(--text-muted); }
+
+    /* ── Sinker Card ── */
+    .sinker-card {
+      display: flex; align-items: center; gap: 16px;
+      padding: 16px 20px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-secondary);
+    }
+
+    .sinker-icon { font-size: 32px; }
+
+    .sinker-type { font-size: 16px; font-weight: 700; }
+    .sinker-type-ar { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+    .sinker-weight { font-size: 22px; font-weight: 700; font-family: var(--font-mono); }
+    .sinker-reason { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+    /* ── Wave Metrics Bar ── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+    }
+
+    .metric-box {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+    }
+
+    .metric-label {
+      font-size: 10px; color: var(--text-muted);
+      letter-spacing: 1.5px; text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+
+    .metric-value {
+      font-size: 22px; font-weight: 700;
+      font-family: var(--font-mono);
+      color: var(--accent-blue);
+      margin: 4px 0;
+    }
+
+    .metric-unit {
+      font-size: 11px; color: var(--text-muted);
+    }
+
+    /* ── Best Spots Panel ── */
+    .golden-window-row {
+      display: flex; align-items: center;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-secondary);
+      gap: 12px;
+      transition: var(--transition);
+      margin-bottom: 8px;
+    }
+
+    .golden-window-row:hover {
+      border-color: var(--border-bright);
+      background: var(--bg-card-hover);
+    }
+
+    .gw-rank {
+      font-size: 18px; font-weight: 700;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      min-width: 28px;
+    }
+
+    .gw-spot { font-size: 14px; font-weight: 600; flex: 1; }
+    .gw-day { font-size: 12px; color: var(--text-secondary); }
+    .gw-window { font-size: 12px; color: var(--accent-cyan); font-family: var(--font-mono); }
+    .gw-rating { font-size: 13px; font-weight: 700; }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-size: 11px; font-weight: 600;
+      font-family: var(--font-mono);
+    }
+
+    /* ── Loading ── */
+    .loading-container {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 300px; gap: 16px;
+    }
+
+    .loading-spinner {
+      width: 48px; height: 48px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent-blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text {
+      color: var(--text-secondary);
+      font-size: 14px;
+      animation: blink 1.5s ease-in-out infinite;
+    }
+
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    /* ── Error ── */
+    .error-box {
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: var(--accent-red);
+      font-size: 14px;
+    }
+
+    /* ── Tide Bar ── */
+    .tide-bar-container {
+      height: 4px;
+      background: var(--bg-secondary);
+      border-radius: 2px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+
+    .tide-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    /* ── Tabbed Section Header ── */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 14px; font-weight: 700;
+      color: var(--text-primary);
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    /* ── Historical Breach Alert ── */
+    .breach-alert {
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.4);
+      font-size: 13px;
+      color: var(--accent-amber);
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+
+    /* ── Compass Rose Visual ── */
+    .compass-container {
+      display: flex; align-items: center; justify-content: center;
+      padding: 10px;
+    }
+
+    .compass {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      position: relative;
+      background: var(--bg-secondary);
+    }
+
+    .compass-arrow {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 2px; height: 36px;
+      transform-origin: bottom center;
+      background: var(--accent-red);
+      border-radius: 1px;
+    }
+
+    /* ── Custom Spot Form ── */
+    .custom-spot-form {
+      display: flex; flex-direction: column; gap: 10px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-family: var(--font-arabic);
+      font-size: 14px;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .form-input:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(14,165,233,0.15);
+    }
+
+    .form-label {
+      font-size: 12px; color: var(--text-secondary);
+      margin-bottom: 4px; display: block;
+    }
+
+    /* ── Tab Switcher (main) ── */
+    .main-tabs {
+      display: flex; gap: 4px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    .main-tab {
+      padding: 10px 18px;
+      border: none; background: transparent;
+      color: var(--text-secondary);
+      font-family: var(--font-arabic);
+      font-size: 14px; font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+
+    .main-tab.active {
+      color: var(--accent-blue);
+      border-bottom-color: var(--accent-blue);
+    }
+
+    .main-tab:hover:not(.active) { color: var(--text-primary); }
+
+    /* ── Scrollable Sections ── */
+    .scrollable { overflow-y: auto; max-height: 400px; }
+
+    /* ── Fishing Species Card ── */
+    .fish-card {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 12px;
+      background: rgba(14,165,233,0.08);
+      border: 1px solid rgba(14,165,233,0.2);
+      border-radius: 20px;
+      font-size: 13px;
+      margin: 4px;
+    }
+
+    /* ── Pressure Chart Mini ── */
+    .mini-chart {
+      height: 40px;
+      display: flex; align-items: flex-end; gap: 2px;
+    }
+
+    .mini-bar {
+      flex: 1;
+      border-radius: 2px 2px 0 0;
+      transition: height 0.3s ease;
+      min-height: 2px;
+    }
+
+    /* ── Wind Rose Direction Display ── */
+    .wind-direction-display {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--text-secondary);
+    }
+
+    /* ── Notifications / Toasts ── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      padding: 14px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      z-index: 9999;
+      font-size: 14px;
+      animation: slide-in 0.3s ease;
+      max-width: 320px;
+    }
+
+    @keyframes slide-in {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .app-container { padding: 12px; gap: 12px; }
+      .risk-grid { grid-template-columns: repeat(2, 1fr); }
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ── Animations ── */
+    .fade-in { animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    .glow-pulse {
+      animation: glow-pulse 3s ease-in-out infinite;
+    }
+    @keyframes glow-pulse {
+      0%, 100% { box-shadow: 0 0 10px rgba(14,165,233,0.2); }
+      50% { box-shadow: 0 0 30px rgba(14,165,233,0.5); }
+    }
+
+    /* ── Sea State Visualizer ── */
+    .sea-state {
+      height: 60px;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      position: relative;
+      background: linear-gradient(180deg, #001f3f 0%, #0a3d62 100%);
+    }
+
+    .wave-svg { position: absolute; bottom: 0; left: 0; width: 100%; }
+
+    /* ── Spot Ranking ── */
+    .rank-medal-1 { color: #ffd700; }
+    .rank-medal-2 { color: #c0c0c0; }
+    .rank-medal-3 { color: #cd7f32; }
+
+    /* ── Progress Ring ── */
+    .progress-ring { transform: rotate(-90deg); }
+  </style>
 </head>
 <body>
+<div id="root"></div>
 
-<div class="container">
-    <h1>⚓ المساعد التكتيكي للسورفكاستينغ</h1>
-    
-    <!-- الخريطة واختيار السبوت -->
-    <div id="map"></div>
+<script type="text/babel">
+/* ═══════════════════════════════════════════════════════════════════════════
+   SURFCAST TUNISIA — FRONTEND APPLICATION
+   React 18 | Leaflet.js | Tailwind-inspired custom CSS
+   Deploy: Vercel (Free Tier)
+   Backend: https://YOUR-RENDER-APP.onrender.com  ← CHANGE THIS
+═══════════════════════════════════════════════════════════════════════════ */
 
-    <div class="card">
-        <label>اختر الولاية والشاطئ المبرمج:</label>
-        <select id="spotSelector" onchange="navigatePredefinedSpot()">
-            <option value="">-- اختر سبوت مبرمج --</option>
-            <optgroup label="تونس العاصمة">
-                <option value="36.9150,10.1550,20">قلعة الأندلس</option>
-                <option value="36.9380,10.2150,45">شاطئ رواد</option>
-            </optgroup>
-            <optgroup label="نابل">
-                <option value="36.8500,11.1000,70">قليبية</option>
-                <option value="37.0500,11.0150,315">الهوارية</option>
-                <option value="36.8850,11.1150,90">حمام الغزاز</option>
-            </select>
-        <label style="display:block; margin-top:10px;">اتجاه مواجهة الشاطئ بالدرجات:</label>
-        <input type="number" id="beachAngle" value="90" style="width:96%; padding:10px; background:#0f172a; color:#fff; border:1px solid #475569; border-radius:8px;">
-        <button style="margin-top:15px;" onclick="getAnalysisFromAPI()">تحليل هذا السبوت الآن 🔍</button>
-        <button style="margin-top:10px; background-color:#22c55e;" onclick="getBestSpot()">ابحث عن أفضل سبوت في تونس 🏆</button>
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+// ── CONFIGURATION ────────────────────────────────────────────────────────────
+// ⚠️ IMPORTANT: Replace with your actual Render backend URL
+const API_BASE = "https://YOUR-SURFCAST-BACKEND.onrender.com";
+
+// ── UTILITY FUNCTIONS ────────────────────────────────────────────────────────
+const degToCompass = (deg) => {
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(deg / 22.5) % 16];
+};
+
+const degToArrow = (deg) => {
+  const arrows = ['↑','↗','→','↘','↓','↙','←','↖'];
+  return arrows[Math.round(deg / 45) % 8];
+};
+
+const formatTime = (isoStr) => {
+  if (!isoStr) return '--:--';
+  return isoStr.slice(11, 16);
+};
+
+const formatDate = (isoStr) => {
+  if (!isoStr) return '---';
+  const d = new Date(isoStr);
+  return d.toLocaleDateString('ar-TN', { weekday: 'long', month: 'short', day: 'numeric' });
+};
+
+const getScoreColor = (score) => {
+  if (score <= 1) return '#22c55e';
+  if (score <= 2) return '#3b82f6';
+  if (score <= 3) return '#f59e0b';
+  return '#ef4444';
+};
+
+const getScoreBg = (score) => {
+  if (score <= 1) return 'rgba(34,197,94,0.12)';
+  if (score <= 2) return 'rgba(59,130,246,0.12)';
+  if (score <= 3) return 'rgba(245,158,11,0.12)';
+  return 'rgba(239,68,68,0.12)';
+};
+
+const renderStars = (count) => {
+  return Array.from({length: 5}, (_, i) => (
+    <span key={i} className="star" style={{opacity: i < count ? 1 : 0.2}}>⭐</span>
+  ));
+};
+
+// Predict likely fish species based on conditions
+const predictFishSpecies = (swellHeight, swellPeriod, season, windClass) => {
+  const fish = [];
+  const month = new Date().getMonth() + 1;
+
+  if (swellHeight < 1.5 && windClass?.type === 'offshore') {
+    fish.push({name: 'سرغ', nameEn: 'White Sea Bream', emoji: '🐟', chance: 'عالي'});
+  }
+  if (swellPeriod >= 10) {
+    fish.push({name: 'دنيس', nameEn: 'Gilt-head Bream', emoji: '🐠', chance: 'متوسط'});
+  }
+  if (swellHeight > 0.8 && swellHeight < 2.0) {
+    fish.push({name: 'قروس', nameEn: 'European Sea Bass', emoji: '🎣', chance: 'عالي'});
+  }
+  if (month >= 3 && month <= 6) {
+    fish.push({name: 'موسى', nameEn: 'Sole', emoji: '🐡', chance: 'موسمي'});
+  }
+  if (swellHeight > 1.0) {
+    fish.push({name: 'سمك الرصاص', nameEn: 'Mullet', emoji: '🐟', chance: 'متوسط'});
+  }
+  if (fish.length === 0) {
+    fish.push({name: 'سباغيتي', nameEn: 'Goatfish', emoji: '🐠', chance: 'منخفض'});
+  }
+  return fish.slice(0, 4);
+};
+
+// Sea State Wave SVG Visualizer
+const SeaStateVisualizer = ({ swellHeight }) => {
+  const amplitude = Math.min(swellHeight * 15, 28);
+  const freq = swellHeight > 1.5 ? 0.8 : 0.5;
+  const color = swellHeight > 2 ? '#ef4444' : swellHeight > 1 ? '#f59e0b' : '#0ea5e9';
+
+  return (
+    <div className="sea-state">
+      <svg className="wave-svg" viewBox="0 0 400 60" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="waveGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={color} stopOpacity="0.6"/>
+            <stop offset="100%" stopColor={color} stopOpacity="0.1"/>
+          </linearGradient>
+        </defs>
+        <path
+          fill="url(#waveGrad)"
+          d={`M0,${30+amplitude} C50,${30-amplitude} 100,${30+amplitude} 150,${30-amplitude/2} C200,${30+amplitude/2} 250,${30-amplitude} 300,${30+amplitude} C350,${30-amplitude/2} 400,${30+amplitude/2} 400,${30+amplitude} L400,60 L0,60 Z`}
+        />
+        <path
+          fill="none"
+          stroke={color}
+          strokeWidth="2"
+          strokeOpacity="0.7"
+          d={`M0,${30+amplitude} C50,${30-amplitude} 100,${30+amplitude} 150,${30-amplitude/2} C200,${30+amplitude/2} 250,${30-amplitude} 300,${30+amplitude} C350,${30-amplitude/2} 400,${30+amplitude/2} 400,${30+amplitude}`}
+        />
+      </svg>
+      <div style={{
+        position: 'absolute', top: 6, right: 10,
+        fontSize: 12, fontFamily: 'JetBrains Mono', color: color, fontWeight: 700
+      }}>
+        {swellHeight.toFixed(2)}م
+      </div>
     </div>
+  );
+};
 
-    <!-- لوحة عرض النتائج التكتيكية -->
-    <div class="card" id="resultCard" style="display:none;">
-        <h2 id="resultTitle" style="color:var(--accent-color); margin-top:0;">تقرير السبوت:</h2>
-        <div id="verdictOutput" class="verdict-box">--</div>
-        
-        <p style="margin-top:15px;"><strong>التحليل التفسيري:</strong> <span id="explanationOutput">--</span></p>
-        <p><strong>الرصاص المقترح:</strong> <span id="sinkerOutput" style="color:var(--accent-color); font-weight:bold;">--</span></p>
-        
-        <p><strong>الأسماك المتوقع نشاطها الآن:</strong></p>
-        <div id="fishOutput">--</div>
-
-        <div class="risk-meters">
-            <div class="risk-card">الأعشاب<div id="weedRisk" class="risk-val">--</div></div>
-            <div class="risk-card">تيار جانبي<div id="driftRisk" class="risk-val">--</div></div>
-            <div class="risk-card">تيار ساحب<div id="ripRisk" class="risk-val">--</div></div>
+// Compass Arrow Component
+const CompassDisplay = ({ windDir, swellDir, beachAngle }) => {
+  return (
+    <div style={{display: 'flex', gap: 16, justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap'}}>
+      {/* Wind Direction */}
+      <div style={{textAlign: 'center'}}>
+        <div style={{
+          width: 64, height: 64, borderRadius: '50%',
+          border: '2px solid #1a3a5c',
+          background: '#0a1628',
+          position: 'relative',
+          margin: '0 auto 6px'
+        }}>
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%',
+            width: 2, height: 26,
+            transformOrigin: 'bottom center',
+            transform: `translate(-50%, -100%) rotate(${windDir}deg)`,
+            background: '#0ea5e9',
+            borderRadius: 1
+          }}/>
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 6, height: 6,
+            borderRadius: '50%',
+            background: '#0ea5e9'
+          }}/>
         </div>
+        <div style={{fontSize: 10, color: '#4a7090', fontFamily: 'JetBrains Mono'}}>ريح</div>
+        <div style={{fontSize: 12, color: '#0ea5e9', fontFamily: 'JetBrains Mono'}}>{degToCompass(windDir)} {windDir}°</div>
+      </div>
+      {/* Swell Direction */}
+      <div style={{textAlign: 'center'}}>
+        <div style={{
+          width: 64, height: 64, borderRadius: '50%',
+          border: '2px solid #1a3a5c',
+          background: '#0a1628',
+          position: 'relative',
+          margin: '0 auto 6px'
+        }}>
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%',
+            width: 2, height: 26,
+            transformOrigin: 'bottom center',
+            transform: `translate(-50%, -100%) rotate(${swellDir}deg)`,
+            background: '#22c55e',
+            borderRadius: 1
+          }}/>
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 6, height: 6,
+            borderRadius: '50%',
+            background: '#22c55e'
+          }}/>
+        </div>
+        <div style={{fontSize: 10, color: '#4a7090', fontFamily: 'JetBrains Mono'}}>أمواج</div>
+        <div style={{fontSize: 12, color: '#22c55e', fontFamily: 'JetBrains Mono'}}>{degToCompass(swellDir)} {swellDir}°</div>
+      </div>
     </div>
-</div>
+  );
+};
 
-<script>
-    // ⚠️ ضع رابط السيرفر الخاص بك من Render هنا بين علامتي التنصيص (دون وضع شَرطة / في النهاية)
-    const BACKEND_URL = "https://fishingbackend-lr8d.onrender.com"; 
+// Risk Card Component
+const RiskCard = ({ icon, title, risk }) => (
+  <div className="risk-card" style={{borderColor: risk?.color ? `${risk.color}40` : undefined}}>
+    <div className="risk-icon">{risk?.emoji || icon}</div>
+    <div className="risk-title">{title}</div>
+    <div className="risk-label" style={{color: risk?.color || '#8ab4d4'}}>
+      {risk?.label || '---'}
+    </div>
+    {risk?.detail && <div className="risk-detail">{risk.detail}</div>}
+  </div>
+);
 
-    // إعداد الخريطة الافتراضية على تونس
-    let map = L.map('map').setView([36.8065, 10.1815], 8);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    let currentMarker = null;
+// Sinker Recommendation Component
+const SinkerCard = ({ sinker }) => {
+  if (!sinker) return null;
+  return (
+    <div className="sinker-card" style={{borderColor: `${sinker.color}40`}}>
+      <div className="sinker-icon">{sinker.emoji}</div>
+      <div style={{flex: 1}}>
+        <div className="sinker-type" style={{color: sinker.color}}>{sinker.type}</div>
+        <div className="sinker-type-ar">{sinker.type_ar}</div>
+        <div className="sinker-reason" style={{marginTop: 6}}>{sinker.reason}</div>
+      </div>
+      <div style={{textAlign: 'center'}}>
+        <div className="sinker-weight" style={{color: sinker.color}}>{sinker.weight}</div>
+        <div style={{fontSize: 10, color: '#4a7090', fontFamily: 'JetBrains Mono'}}>الوزن</div>
+      </div>
+    </div>
+  );
+};
 
-    map.on('click', function(e) {
-        let lat = e.latlng.lat.toFixed(4);
-        let lon = e.latlng.lng.toFixed(4);
-        if(currentMarker) map.removeLayer(currentMarker);
-        currentMarker = L.marker([lat, lon]).addTo(map).bindPopup("سبوت مخصص").openPopup();
-        document.getElementById('spotSelector').value = "";
+// Golden Window Row Component
+const GoldenWindowRow = ({ window, index, onSelect }) => {
+  const medals = ['🥇','🥈','🥉'];
+  return (
+    <div className="golden-window-row" onClick={() => onSelect && onSelect(window)}>
+      <div className="gw-rank">{medals[index] || `${index+1}`}</div>
+      <div style={{flex: 1}}>
+        <div className="gw-spot">{window.spot_name}</div>
+        <div style={{display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap'}}>
+          <span className="gw-day" style={{color: '#06b6d4'}}>{window.day_label}</span>
+          <span className="gw-window">{window.window_label}</span>
+          {window.region && <span style={{fontSize: 11, color: '#4a7090'}}>{window.region}</span>}
+        </div>
+      </div>
+      <div style={{textAlign: 'center'}}>
+        <div className="gw-rating" style={{color: window.rating_color}}>{window.rating}</div>
+        <div style={{fontSize: 10, color: '#4a7090', fontFamily: 'JetBrains Mono', marginTop: 2}}>
+          avg: {window.avg_score?.toFixed(2)}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Toast Notification
+const Toast = ({ message, type = 'info', onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 4000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const colors = {
+    info: '#0ea5e9',
+    success: '#22c55e',
+    warning: '#f59e0b',
+    error: '#ef4444'
+  };
+
+  return (
+    <div className="toast" style={{borderColor: `${colors[type]}60`}}>
+      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12}}>
+        <div style={{color: colors[type], fontSize: 13}}>{message}</div>
+        <button onClick={onClose} style={{
+          background: 'none', border: 'none', color: '#4a7090',
+          cursor: 'pointer', fontSize: 16, padding: 0, lineHeight: 1
+        }}>×</button>
+      </div>
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LEAFLET MAP COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════
+const LeafletMap = ({ spots, selectedSpot, onMapClick, onSpotSelect }) => {
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const markersRef = useRef([]);
+
+  useEffect(() => {
+    if (mapInstanceRef.current) return;
+
+    const map = L.map('leaflet-map', {
+      center: [36.8, 10.2],
+      zoom: 7,
+      zoomControl: true,
+      attributionControl: false
     });
 
-    function navigatePredefinedSpot() {
-        let val = document.getElementById('spotSelector').value;
-        if(!val) return;
-        let [lat, lon, angle] = val.split(',');
-        document.getElementById('beachAngle').value = angle;
-        map.setView([lat, lon], 12);
-        if(currentMarker) map.removeLayer(currentMarker);
-        currentMarker = L.marker([lat, lon]).addTo(map);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      attribution: '©OpenStreetMap ©CartoDB'
+    }).addTo(map);
+
+    mapInstanceRef.current = map;
+
+    // Custom marker icon
+    const createIcon = (color, selected = false) => L.divIcon({
+      html: `<div style="
+        width: ${selected ? 16 : 12}px;
+        height: ${selected ? 16 : 12}px;
+        border-radius: 50%;
+        background: ${color};
+        border: ${selected ? 3 : 2}px solid white;
+        box-shadow: 0 0 ${selected ? 12 : 6}px ${color};
+        transition: all 0.2s;
+      "></div>`,
+      className: '',
+      iconSize: [selected ? 16 : 12, selected ? 16 : 12],
+      iconAnchor: [selected ? 8 : 6, selected ? 8 : 6]
+    });
+
+    // Add predefined spot markers
+    spots.forEach(spot => {
+      const marker = L.marker([spot.lat, spot.lon], {
+        icon: createIcon('#0ea5e9')
+      }).addTo(map);
+
+      marker.bindTooltip(`<b>${spot.name}</b><br>${spot.name_en}`, {
+        permanent: false,
+        direction: 'top',
+        className: 'leaflet-tooltip-dark'
+      });
+
+      marker.on('click', () => onSpotSelect(spot));
+      markersRef.current.push({ marker, spot, icon: createIcon('#0ea5e9') });
+    });
+
+    // Map click for custom spots
+    map.on('click', (e) => {
+      onMapClick(e.latlng.lat, e.latlng.lng);
+    });
+
+    mapRef.current = map;
+  }, []);
+
+  // Update marker styles when selection changes
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    markersRef.current.forEach(({ marker, spot }) => {
+      const isSelected = selectedSpot && selectedSpot.id === spot.id;
+      marker.setIcon(L.divIcon({
+        html: `<div style="
+          width: ${isSelected ? 18 : 12}px;
+          height: ${isSelected ? 18 : 12}px;
+          border-radius: 50%;
+          background: ${isSelected ? '#22c55e' : '#0ea5e9'};
+          border: ${isSelected ? 3 : 2}px solid white;
+          box-shadow: 0 0 ${isSelected ? 14 : 6}px ${isSelected ? '#22c55e' : '#0ea5e9'};
+        "></div>`,
+        className: '',
+        iconSize: [isSelected ? 18 : 12, isSelected ? 18 : 12],
+        iconAnchor: [isSelected ? 9 : 6, isSelected ? 9 : 6]
+      }));
+    });
+  }, [selectedSpot]);
+
+  return <div id="leaflet-map" style={{width: '100%', height: '100%', borderRadius: 12}} />;
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MAIN APP COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════
+function App() {
+  // ── State ──────────────────────────────────────────────────────────────────
+  const [spots, setSpots] = useState([]);
+  const [selectedSpot, setSelectedSpot] = useState(null);
+  const [forecast, setForecast] = useState(null);
+  const [bestSpots, setBestSpots] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingBest, setLoadingBest] = useState(false);
+  const [error, setError] = useState(null);
+  const [activeMainTab, setActiveMainTab] = useState('forecast'); // 'forecast' | 'best-spots'
+  const [activeDayIndex, setActiveDayIndex] = useState(0);
+  const [activeHourIndex, setActiveHourIndex] = useState(0);
+  const [toast, setToast] = useState(null);
+
+  // Custom spots (localStorage)
+  const [customSpots, setCustomSpots] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('surfcast_custom_spots') || '[]');
+    } catch { return []; }
+  });
+
+  // Custom spot form
+  const [pendingCoords, setPendingCoords] = useState(null);
+  const [customSpotName, setCustomSpotName] = useState('');
+  const [customBeachAngle, setCustomBeachAngle] = useState(90);
+  const [showCustomForm, setShowCustomForm] = useState(false);
+
+  // ── Load spots on mount ───────────────────────────────────────────────────
+  useEffect(() => {
+    fetch(`${API_BASE}/spots`)
+      .then(r => r.json())
+      .then(data => setSpots(data.spots || []))
+      .catch(() => setError('تعذّر الاتصال بالخادم. تأكد من تشغيل الـ Backend.'));
+  }, []);
+
+  // ── Save custom spots to localStorage ────────────────────────────────────
+  useEffect(() => {
+    localStorage.setItem('surfcast_custom_spots', JSON.stringify(customSpots));
+  }, [customSpots]);
+
+  // ── Fetch forecast for a spot ─────────────────────────────────────────────
+  const fetchForecast = useCallback(async (spot) => {
+    setLoading(true);
+    setError(null);
+    setSelectedSpot(spot);
+    setActiveDayIndex(0);
+    setActiveHourIndex(0);
+    setActiveMainTab('forecast');
+
+    try {
+      const params = new URLSearchParams({
+        lat: spot.lat,
+        lon: spot.lon,
+        name: spot.name,
+        beach_angle: spot.beach_angle || 90
+      });
+      const resp = await fetch(`${API_BASE}/forecast?${params}`);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      setForecast(data);
+    } catch (e) {
+      setError(`خطأ في جلب البيانات: ${e.message}`);
+    } finally {
+      setLoading(false);
     }
+  }, []);
 
-    async function getAnalysisFromAPI() {
-        let lat, lon, angle = document.getElementById('beachAngle').value;
-        let val = document.getElementById('spotSelector').value;
-        
-        if(val) {
-            [lat, lon] = val.split(',');
-        } else if(currentMarker) {
-            lat = currentMarker.getLatLng().lat;
-            lon = currentMarker.getLatLng().lng;
-        } else {
-            alert("الرجاء اختيار شاطئ من القائمة أو الضغط على الخريطة أولاً!");
-            return;
-        }
+  // ── Fetch best spots ──────────────────────────────────────────────────────
+  const fetchBestSpots = useCallback(async () => {
+    setLoadingBest(true);
+    setError(null);
+    setActiveMainTab('best-spots');
 
-        try {
-            document.getElementById('resultCard').style.display = "block";
-            document.getElementById('verdictOutput').innerText = "جاري جلب البيانات...";
-            
-            let res = await fetch(`${BACKEND_URL}/forecast?lat=${lat}&lon=${lon}&angle=${angle}`);
-            let data = await res.json();
-            
-            // قراءة الساعة الحالية من مصفوفة التحليل
-            let currentData = data.analysis[0]; 
-            
-            let vOut = document.getElementById('verdictOutput');
-            vOut.innerText = currentData.verdict;
-            if(currentData.verdict === "ممتاز") vOut.style.background = "var(--success)";
-            if(currentData.verdict === "ممكن") vOut.style.background = "#2563eb";
-            if(currentData.verdict === "صعب جداً") vOut.style.background = "var(--warning)";
-            if(currentData.verdict === "مستحيل") vOut.style.background = "var(--danger)";
-
-            document.getElementById('explanationOutput').innerText = currentData.explanation;
-            document.getElementById('sinkerOutput').innerText = currentData.sinker_advice;
-            
-            // عرض السمك
-            let fishDiv = document.getElementById('fishOutput');
-            fishDiv.innerHTML = currentData.likely_fish.length ? 
-                currentData.likely_fish.map(f => `<span class="badge">${f}</span>`).join('') : "نشاط ضعيف للأسماك";
-
-            // المخاطر
-            setRiskStyle('weedRisk', currentData.risks.seaweed);
-            setRiskStyle('driftRisk', currentData.risks.longshore_drift);
-            setRiskStyle('ripRisk', currentData.risks.rip_current);
-
-        } catch (err) {
-            alert("خطأ في الاتصال بالباكيند. تأكد من تشغيل سيرفر Render وتحديث الرابط!");
-        }
+    try {
+      const params = new URLSearchParams();
+      if (customSpots.length > 0) {
+        params.set('custom_spots', JSON.stringify(customSpots));
+      }
+      const resp = await fetch(`${API_BASE}/best-spots?${params}`);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      setBestSpots(data);
+    } catch (e) {
+      setError(`خطأ في تحليل المواقع: ${e.message}`);
+    } finally {
+      setLoadingBest(false);
     }
+  }, [customSpots]);
 
-    function setRiskStyle(elementId, value) {
-        let el = document.getElementById(elementId);
-        el.innerText = value;
-        el.className = "risk-val";
-        if(value === "None") el.classList.add('status-none');
-        if(value === "Low") el.classList.add('status-low');
-        if(value === "High") el.classList.add('status-high');
-        if(value === "Confirmed") el.classList.add('status-confirmed');
-    }
+  // ── Handle map click → custom spot ───────────────────────────────────────
+  const handleMapClick = useCallback((lat, lon) => {
+    setPendingCoords({ lat: parseFloat(lat.toFixed(5)), lon: parseFloat(lon.toFixed(5)) });
+    setCustomSpotName('');
+    setCustomBeachAngle(90);
+    setShowCustomForm(true);
+  }, []);
 
-    async function getBestSpot() {
-        try {
-            alert("جاري فحص جميع شواطئ تونس المبرمجة حالياً... انتظر ثانية.");
-            let res = await fetch(`${BACKEND_URL}/decision-maker`);
-            let data = await res.json();
-            let best = data[0];
-            alert(`🏆 أفضل سبوت للصيد الآن هو: ${best.spot_name}\nالتقييم: ${best.verdict}\nالسبب: ${best.explanation}\nالرصاص: ${best.sinker_advice}`);
-        } catch(e) {
-            alert("تعذر جلب صانع القرار.");
-        }
-    }
+  const saveCustomSpot = useCallback(() => {
+    if (!pendingCoords) return;
+    const newSpot = {
+      id: `custom_${pendingCoords.lat}_${pendingCoords.lon}`,
+      name: customSpotName || `موقع (${pendingCoords.lat.toFixed(3)}, ${pendingCoords.lon.toFixed(3)})`,
+      name_en: customSpotName || `Custom Spot`,
+      lat: pendingCoords.lat,
+      lon: pendingCoords.lon,
+      beach_angle: parseFloat(customBeachAngle) || 90,
+      region: 'مخصص'
+    };
+    setCustomSpots(prev => {
+      const filtered = prev.filter(s => s.id !== newSpot.id);
+      return [...filtered, newSpot];
+    });
+    setShowCustomForm(false);
+    setToast({ message: `✅ تم حفظ الموقع: ${newSpot.name}`, type: 'success' });
+    fetchForecast(newSpot);
+  }, [pendingCoords, customSpotName, customBeachAngle, fetchForecast]);
+
+  const removeCustomSpot = useCallback((spotId) => {
+    setCustomSpots(prev => prev.filter(s => s.id !== spotId));
+    setToast({ message: 'تم حذف الموقع', type: 'info' });
+  }, []);
+
+  // ── Computed values ───────────────────────────────────────────────────────
+  const allSpots = useMemo(() => [...spots, ...customSpots], [spots, customSpots]);
+
+  const activeDayData = useMemo(() => {
+    if (!forecast || !forecast.days) return null;
+    return forecast.days[activeDayIndex] || null;
+  }, [forecast, activeDayIndex]);
+
+  const activeHourData = useMemo(() => {
+    if (!activeDayData || !activeDayData.hours) return null;
+    return activeDayData.hours[activeHourIndex] || activeDayData.hours[0] || null;
+  }, [activeDayData, activeHourIndex]);
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+  return (
+    <div>
+      {/* NAVBAR */}
+      <nav className="navbar">
+        <div className="navbar-brand">
+          <div className="navbar-logo">🎣</div>
+          <div>
+            <div className="navbar-title">SurfCast Tunisia</div>
+            <div className="navbar-subtitle">Tactical Fishing Intelligence</div>
+          </div>
+        </div>
+        <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
+          <div className="navbar-status">
+            <div className="status-dot" />
+            <span style={{fontFamily: 'JetBrains Mono'}}>Open-Meteo LIVE</span>
+          </div>
+          <div style={{
+            fontSize: 12, color: '#4a7090',
+            fontFamily: 'JetBrains Mono',
+            padding: '4px 10px',
+            background: '#0a1628',
+            borderRadius: 6,
+            border: '1px solid #1a3a5c'
+          }}>
+            {new Date().toLocaleTimeString('ar-TN', {hour: '2-digit', minute: '2-digit'})} TUN
+          </div>
+        </div>
+      </nav>
+
+      {/* MAIN LAYOUT */}
+      <div className="app-container">
+
+        {/* ── SIDEBAR ─────────────────────────────────────────────────── */}
+        <aside className="sidebar">
+
+          {/* MAP */}
+          <div className="card" style={{padding: 0, overflow: 'hidden'}}>
+            <div id="map-container" style={{height: 220, borderRadius: 12}}>
+              <LeafletMap
+                spots={allSpots}
+                selectedSpot={selectedSpot}
+                onMapClick={handleMapClick}
+                onSpotSelect={fetchForecast}
+              />
+            </div>
+            <div style={{
+              padding: '8px 14px',
+              background: 'rgba(14,165,233,0.06)',
+              borderTop: '1px solid #1a3a5c',
+              fontSize: 11, color: '#4a7090',
+              display: 'flex', alignItems: 'center', gap: 6
+            }}>
+              <span>📍</span>
+              <span>انقر على الخريطة لإضافة موقع مخصص</span>
+            </div>
+          </div>
+
+          {/* CUSTOM SPOT FORM */}
+          {showCustomForm && pendingCoords && (
+            <div className="card fade-in" style={{borderColor: 'rgba(14,165,233,0.4)'}}>
+              <div className="card-title">📌 حفظ موقع مخصص</div>
+              <div className="custom-spot-form">
+                <div style={{
+                  padding: '8px 12px',
+                  background: 'rgba(14,165,233,0.08)',
+                  borderRadius: 6,
+                  fontSize: 12, color: '#0ea5e9',
+                  fontFamily: 'JetBrains Mono'
+                }}>
+                  📍 {pendingCoords.lat}°N, {pendingCoords.lon}°E
+                </div>
+                <div>
+                  <label className="form-label">اسم الموقع</label>
+                  <input
+                    className="form-input"
+                    placeholder="مثال: شاطئ الجملة - القيروان"
+                    value={customSpotName}
+                    onChange={e => setCustomSpotName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="form-label">
+                    زاوية الشاطئ (اتجاه البحر) — {customBeachAngle}°  {degToCompass(customBeachAngle)}
+                  </label>
+                  <input
+                    type="range"
+                    className="hour-slider"
+                    min="0" max="359" step="5"
+                    value={customBeachAngle}
+                    onChange={e => setCustomBeachAngle(parseInt(e.target.value))}
+                  />
+                  <div style={{
+                    fontSize: 11, color: '#4a7090', marginTop: 4,
+                    fontFamily: 'JetBrains Mono'
+                  }}>
+                    ℹ️ الاتجاه الذي يواجه فيه الشاطئ البحر (0°=شمال، 90°=شرق، 180°=جنوب، 270°=غرب)
+                  </div>
+                </div>
+                <div style={{display: 'flex', gap: 8}}>
+                  <button className="btn btn-primary" style={{flex: 1}} onClick={saveCustomSpot}>
+                    💾 حفظ وتحليل
+                  </button>
+                  <button className="btn btn-ghost" onClick={() => setShowCustomForm(false)}>
+                    ✕
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ACTION BUTTONS */}
+          <div style={{display: 'flex', gap: 8}}>
+            <button
+              className="btn btn-success"
+              style={{flex: 1, fontSize: 13}}
+              onClick={fetchBestSpots}
+              disabled={loadingBest}
+            >
+              {loadingBest ? '⏳ جارٍ التحليل...' : '🏆 أفضل المواقع الآن'}
+            </button>
+          </div>
+
+          {/* PREDEFINED SPOTS */}
+          <div className="card">
+            <div className="card-title">🗺️ المواقع الرسمية</div>
+            <div style={{maxHeight: 300, overflowY: 'auto'}}>
+              {spots.map(spot => (
+                <div
+                  key={spot.id}
+                  className={`spot-item ${selectedSpot?.id === spot.id ? 'active' : ''}`}
+                  onClick={() => fetchForecast(spot)}
+                >
+                  <div className="spot-name-ar">{spot.name}</div>
+                  <div className="spot-name-en">{spot.name_en}</div>
+                  <div className="spot-region">{spot.region} · {spot.beach_angle}° {degToCompass(spot.beach_angle)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* CUSTOM SPOTS */}
+          {customSpots.length > 0 && (
+            <div className="card">
+              <div className="card-title">📌 مواقعي المحفوظة</div>
+              {customSpots.map(spot => (
+                <div
+                  key={spot.id}
+                  className={`spot-item ${selectedSpot?.id === spot.id ? 'active' : ''}`}
+                  style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}
+                >
+                  <div style={{flex: 1, cursor: 'pointer'}} onClick={() => fetchForecast(spot)}>
+                    <div className="spot-name-ar">{spot.name}</div>
+                    <div className="spot-region">
+                      {spot.lat.toFixed(3)}°N, {spot.lon.toFixed(3)}°E · {spot.beach_angle}°
+                    </div>
+                  </div>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={e => { e.stopPropagation(); removeCustomSpot(spot.id); }}
+                    style={{fontSize: 14, padding: '4px 8px'}}
+                  >
+                    🗑️
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* API SOURCES */}
+          <div className="card" style={{padding: '14px 16px'}}>
+            <div style={{fontSize: 11, color: '#4a7090', fontFamily: 'JetBrains Mono', lineHeight: 1.8}}>
+              <div style={{color: '#8ab4d4', fontWeight: 600, marginBottom: 6}}>📡 مصادر البيانات</div>
+              <div>🌊 Open-Meteo Marine API</div>
+              <div>🌤️ Open-Meteo Weather API</div>
+              <div>📊 48h History + 3-Day Forecast</div>
+              <div style={{marginTop: 8, color: '#22c55e'}}>✅ 100% مجاني — بدون API Key</div>
+            </div>
+          </div>
+
+        </aside>
+
+        {/* ── MAIN CONTENT ─────────────────────────────────────────────── */}
+        <main className="main-content">
+
+          {/* MAIN TABS */}
+          <div className="main-tabs">
+            <button
+              className={`main-tab ${activeMainTab === 'forecast' ? 'active' : ''}`}
+              onClick={() => setActiveMainTab('forecast')}
+            >
+              🌊 التحليل التفصيلي
+            </button>
+            <button
+              className={`main-tab ${activeMainTab === 'best-spots' ? 'active' : ''}`}
+              onClick={() => { setActiveMainTab('best-spots'); if (!bestSpots && !loadingBest) fetchBestSpots(); }}
+            >
+              🏆 أفضل المواقع والأوقات
+            </button>
+          </div>
+
+          {/* ERROR */}
+          {error && (
+            <div className="error-box fade-in">
+              ⚠️ {error}
+            </div>
+          )}
+
+          {/* ═══════════ TAB: FORECAST ═══════════ */}
+          {activeMainTab === 'forecast' && (
+            <>
+              {/* No spot selected */}
+              {!selectedSpot && !loading && (
+                <div style={{
+                  display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center',
+                  minHeight: 400, gap: 16, textAlign: 'center'
+                }}>
+                  <div style={{fontSize: 64}}>🎣</div>
+                  <div style={{fontSize: 22, fontWeight: 700, color: '#e2f0ff'}}>
+                    اختر موقعاً للبدء
+                  </div>
+                  <div style={{fontSize: 14, color: '#4a7090', maxWidth: 400, lineHeight: 1.8}}>
+                    انقر على أحد المواقع في القائمة أو انقر على الخريطة لإضافة موقع مخصص.
+                    سيقوم النظام بتحليل آخر 48 ساعة + التوقعات الـ3 أيام القادمة.
+                  </div>
+                  <button className="btn btn-success" onClick={fetchBestSpots} disabled={loadingBest}>
+                    🏆 أو ابدأ بعرض أفضل المواقع
+                  </button>
+                </div>
+              )}
+
+              {/* Loading */}
+              {loading && (
+                <div className="loading-container">
+                  <div className="loading-spinner" />
+                  <div className="loading-text">⚙️ جارٍ تحليل بيانات الـ48 ساعة + التوقعات الـ3 أيام...</div>
+                </div>
+              )}
+
+              {/* Forecast Data */}
+              {!loading && forecast && activeDayData && activeHourData && (
+                <div className="fade-in">
+
+                  {/* Historical Breach Alert */}
+                  {forecast.historical_breach && (
+                    <div className="breach-alert" style={{marginBottom: 16}}>
+                      <span style={{fontSize: 20}}>⚠️</span>
+                      <div>
+                        <div style={{fontWeight: 700, marginBottom: 4}}>تحذير: اضطراب بحري مسجّل في الـ48 ساعة الماضية</div>
+                        <div style={{fontSize: 12, lineHeight: 1.7}}>
+                          تم تسجيل أمواج فوق 1.8م مع ريح بحرية خلال الـ48 ساعة الماضية.
+                          خطر العشب البحري والحطام قائم وسيبقى مرتفعاً حتى استقرار البحر.
+                          {forecast.hours_since_breach && ` (منذ ${forecast.hours_since_breach} ساعة)`}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* VERDICT CARD */}
+                  <div
+                    className="verdict-card"
+                    style={{
+                      borderColor: `${activeHourData.verdict.color}50`,
+                      background: activeHourData.verdict.bg_color,
+                      color: activeHourData.verdict.color,
+                      marginBottom: 20
+                    }}
+                  >
+                    <div style={{display: 'flex', alignItems: 'flex-start', gap: 20, flexWrap: 'wrap'}}>
+                      <div>
+                        <div className="verdict-emoji">{activeHourData.verdict.emoji}</div>
+                        <div className="verdict-label" style={{color: activeHourData.verdict.color}}>
+                          {activeHourData.verdict.verdict}
+                        </div>
+                        <div className="verdict-stars">
+                          {renderStars(activeHourData.verdict.stars)}
+                        </div>
+                        <div className="verdict-spot-name" style={{marginTop: 8}}>
+                          {forecast.spot.name} · {activeHourData.day_label} · {formatTime(activeHourData.time)}
+                        </div>
+                      </div>
+                      <div style={{flex: 1, minWidth: 200}}>
+                        <SeaStateVisualizer swellHeight={activeHourData.swell_height} />
+                        <div style={{marginTop: 10}}>
+                          <CompassDisplay
+                            windDir={activeHourData.wind_direction}
+                            swellDir={activeHourData.swell_direction}
+                            beachAngle={forecast.spot.beach_angle}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Arabic Explanation */}
+                    <div className="verdict-explanation" style={{borderRightColor: activeHourData.verdict.color}}>
+                      {activeHourData.arabic_explanation}
+                    </div>
+                  </div>
+
+                  {/* DAY TAB SWITCHER */}
+                  <div className="card" style={{marginBottom: 16}}>
+                    <div className="card-title">📅 الأيام القادمة</div>
+                    <div className="day-tabs">
+                      {forecast.days.map((day, idx) => (
+                        <button
+                          key={idx}
+                          className={`day-tab ${activeDayIndex === idx ? 'active' : ''}`}
+                          onClick={() => { setActiveDayIndex(idx); setActiveHourIndex(0); }}
+                        >
+                          <span>{day.day_label}</span>
+                          <span className="day-tab-score" style={{
+                            color: activeDayIndex === idx ? 'rgba(255,255,255,0.7)' : getScoreColor(day.avg_verdict_score)
+                          }}>
+                            {day.excellent_count > 0 ? `⭐ ${day.excellent_count} ممتاز` : `avg: ${day.avg_verdict_score?.toFixed(1)}`}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Best Window for Selected Day */}
+                    {activeDayData.best_window && (
+                      <div style={{
+                        marginTop: 12,
+                        padding: '10px 14px',
+                        background: 'rgba(34,197,94,0.08)',
+                        border: '1px solid rgba(34,197,94,0.3)',
+                        borderRadius: 8,
+                        display: 'flex', alignItems: 'center', gap: 10
+                      }}>
+                        <span style={{fontSize: 20}}>⏰</span>
+                        <div>
+                          <div style={{fontSize: 13, fontWeight: 600, color: '#22c55e'}}>
+                            أفضل نافذة زمنية لهذا اليوم
+                          </div>
+                          <div style={{fontSize: 12, color: '#8ab4d4', marginTop: 2, fontFamily: 'JetBrains Mono'}}>
+                            {activeDayData.best_window.label} · متوسط: {activeDayData.best_window.avg_score?.toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* HOUR TIMELINE */}
+                  <div className="card" style={{marginBottom: 16}}>
+                    <div className="card-title">⏱️ جدول الساعات</div>
+
+                    {/* Hour Chips */}
+                    <div className="hours-timeline">
+                      {(activeDayData.hours || []).map((h, idx) => (
+                        <div
+                          key={idx}
+                          className={`hour-chip ${activeHourIndex === idx ? 'selected' : ''}`}
+                          style={{
+                            borderColor: `${h.verdict.color}60`,
+                            background: activeHourIndex === idx ? `${h.verdict.color}20` : 'var(--bg-secondary)',
+                            color: h.verdict.color,
+                            boxShadow: activeHourIndex === idx ? `0 0 12px ${h.verdict.color}40` : 'none'
+                          }}
+                          onClick={() => setActiveHourIndex(idx)}
+                        >
+                          <div className="hour-chip-time">{formatTime(h.time)}</div>
+                          <div className="hour-chip-emoji">{h.verdict.emoji}</div>
+                          <div className="hour-chip-swell">{h.swell_height.toFixed(1)}م</div>
+                          <div style={{fontSize: 9, color: '#4a7090', fontFamily: 'JetBrains Mono', marginTop: 2}}>
+                            {h.wind_speed_kmh}كم/س
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Slider */}
+                    <div className="slider-container" style={{marginTop: 12}}>
+                      <input
+                        type="range"
+                        className="hour-slider"
+                        min="0"
+                        max={Math.max(0, (activeDayData.hours || []).length - 1)}
+                        value={activeHourIndex}
+                        onChange={e => setActiveHourIndex(parseInt(e.target.value))}
+                      />
+                      <div className="slider-labels">
+                        <span>00:00</span>
+                        <span>06:00</span>
+                        <span>12:00</span>
+                        <span>18:00</span>
+                        <span>23:00</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* RISK GRID */}
+                  <div className="card" style={{marginBottom: 16}}>
+                    <div className="card-title">🛡️ لوحة المخاطر</div>
+                    <div className="risk-grid">
+                      <RiskCard
+                        title="أعشاب بحرية"
+                        risk={{
+                          ...activeHourData.seaweed_risk,
+                          detail: activeHourData.seaweed_risk?.persistence_active ? 'تأثير الـ48ساعة نشط' : undefined
+                        }}
+                      />
+                      <RiskCard title="تيارات رجعية" risk={activeHourData.rip_current_risk} />
+                      <RiskCard title="الريح والرمي" risk={activeHourData.wind_danger} />
+                      <div className="risk-card">
+                        <div className="risk-icon">{activeHourData.tide_phase?.phase === 'low' ? '🌊⬇️' : activeHourData.tide_phase?.phase === 'high' ? '🌊⬆️' : '🌊'}</div>
+                        <div className="risk-title">المد والجزر</div>
+                        <div className="risk-label" style={{color: '#0ea5e9'}}>{activeHourData.tide_phase?.label}</div>
+                        <div className="tide-bar-container">
+                          <div className="tide-bar-fill" style={{
+                            width: `${((activeHourData.tide_phase?.level || 0) + 1) / 2 * 100}%`,
+                            background: '#0ea5e9'
+                          }}/>
+                        </div>
+                      </div>
+                      <div className="risk-card">
+                        <div className="risk-icon">
+                          {activeHourData.pressure_trend?.fishing_bonus ? '📉' : activeHourData.pressure_trend?.trend?.includes('rising') ? '📈' : '📊'}
+                        </div>
+                        <div className="risk-title">الضغط الجوي</div>
+                        <div className="risk-label" style={{color: activeHourData.pressure_trend?.fishing_bonus ? '#22c55e' : '#8ab4d4'}}>
+                          {activeHourData.pressure_trend?.label}
+                        </div>
+                        <div className="risk-detail">
+                          {activeHourData.pressure_hpa} hPa ({activeHourData.pressure_trend?.delta > 0 ? '+' : ''}{activeHourData.pressure_trend?.delta})
+                        </div>
+                      </div>
+                      <div className="risk-card">
+                        <div className="risk-icon">{activeHourData.wind_classification?.emoji}</div>
+                        <div className="risk-title">اتجاه الريح</div>
+                        <div className="risk-label" style={{color: '#06b6d4', fontSize: 13}}>
+                          {activeHourData.wind_classification?.label}
+                        </div>
+                        <div className="risk-detail">
+                          {degToCompass(activeHourData.wind_direction)} {activeHourData.wind_direction}°
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* WAVE METRICS */}
+                  <div className="card" style={{marginBottom: 16}}>
+                    <div className="card-title">📊 مقاييس البحر</div>
+                    <div className="metrics-grid">
+                      <div className="metric-box">
+                        <div className="metric-label">ارتفاع المد</div>
+                        <div className="metric-value">{activeHourData.swell_height.toFixed(2)}</div>
+                        <div className="metric-unit">متر</div>
+                      </div>
+                      <div className="metric-box">
+                        <div className="metric-label">دورة الأمواج</div>
+                        <div className="metric-value" style={{color: '#22c55e'}}>{activeHourData.swell_period.toFixed(1)}</div>
+                        <div className="metric-unit">ثانية</div>
+                      </div>
+                      <div className="metric-box">
+                        <div className="metric-label">سرعة الريح</div>
+                        <div className="metric-value" style={{color: '#f59e0b'}}>{activeHourData.wind_speed_kmh}</div>
+                        <div className="metric-unit">كم/ساعة</div>
+                      </div>
+                      <div className="metric-box">
+                        <div className="metric-label">هبّة الريح</div>
+                        <div className="metric-value" style={{color: '#ef4444'}}>{activeHourData.wind_gust_kmh}</div>
+                        <div className="metric-unit">كم/ساعة</div>
+                      </div>
+                      <div className="metric-box">
+                        <div className="metric-label">الارتفاع الكلي</div>
+                        <div className="metric-value">{activeHourData.wave_height.toFixed(2)}</div>
+                        <div className="metric-unit">متر</div>
+                      </div>
+                      <div className="metric-box">
+                        <div className="metric-label">دورة الذروة</div>
+                        <div className="metric-value" style={{color: '#a855f7'}}>{activeHourData.swell_peak_period.toFixed(1)}</div>
+                        <div className="metric-unit">ثانية</div>
+                      </div>
+                      <div className="metric-box">
+                        <div className="metric-label">درجة الحرارة</div>
+                        <div className="metric-value" style={{color: '#f97316'}}>{activeHourData.temperature_c}</div>
+                        <div className="metric-unit">°مئوية</div>
+                      </div>
+                      <div className="metric-box">
+                        <div className="metric-label">احتمال أمطار</div>
+                        <div className="metric-value" style={{color: activeHourData.precipitation_probability > 50 ? '#ef4444' : '#8ab4d4'}}>
+                          {activeHourData.precipitation_probability}
+                        </div>
+                        <div className="metric-unit">%</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SINKER RECOMMENDATION */}
+                  <div className="card" style={{marginBottom: 16}}>
+                    <div className="card-title">⚓ توصية الثقل (السينكر)</div>
+                    <SinkerCard sinker={activeHourData.sinker_recommendation} />
+                  </div>
+
+                  {/* FISH SPECIES PREDICTION */}
+                  <div className="card" style={{marginBottom: 16}}>
+                    <div className="card-title">🐟 أنواع الأسماك المتوقعة</div>
+                    <div style={{display: 'flex', flexWrap: 'wrap', gap: 4}}>
+                      {predictFishSpecies(
+                        activeHourData.swell_height,
+                        activeHourData.swell_period,
+                        null,
+                        activeHourData.wind_classification
+                      ).map((fish, i) => (
+                        <div key={i} className="fish-card">
+                          <span>{fish.emoji}</span>
+                          <span>{fish.name}</span>
+                          <span className="badge" style={{
+                            background: 'rgba(14,165,233,0.15)',
+                            color: '#0ea5e9'
+                          }}>{fish.chance}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{marginTop: 10, fontSize: 11, color: '#4a7090', lineHeight: 1.7}}>
+                      ⚠️ التوقعات تُبنى على ظروف البحر والموسم. نتائج الصيد تعتمد أيضاً على الطعم والخبرة.
+                    </div>
+                  </div>
+
+                  {/* 3-DAY SUMMARY TABLE */}
+                  <div className="card">
+                    <div className="card-title">📋 ملخص الـ3 أيام</div>
+                    <div style={{overflowX: 'auto'}}>
+                      <table style={{width: '100%', borderCollapse: 'collapse'}}>
+                        <thead>
+                          <tr style={{borderBottom: '1px solid #1a3a5c'}}>
+                            {['اليوم', 'أفضل توقيت', 'أفضل حكم', 'متوسط', 'ساعات ممتازة', 'حوادث تاريخية'].map(h => (
+                              <th key={h} style={{
+                                padding: '8px 12px', textAlign: 'right',
+                                fontSize: 11, color: '#4a7090',
+                                fontFamily: 'JetBrains Mono', fontWeight: 600,
+                                letterSpacing: 1
+                              }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {forecast.days.map((day, idx) => (
+                            <tr
+                              key={idx}
+                              style={{
+                                borderBottom: '1px solid #0a1628',
+                                background: activeDayIndex === idx ? 'rgba(14,165,233,0.06)' : 'transparent',
+                                cursor: 'pointer'
+                              }}
+                              onClick={() => { setActiveDayIndex(idx); setActiveHourIndex(0); }}
+                            >
+                              <td style={{padding: '10px 12px', fontWeight: 600, color: '#e2f0ff'}}>
+                                {day.day_label}
+                                <div style={{fontSize: 10, color: '#4a7090', fontFamily: 'JetBrains Mono'}}>{day.date}</div>
+                              </td>
+                              <td style={{padding: '10px 12px', fontFamily: 'JetBrains Mono', fontSize: 12, color: '#06b6d4'}}>
+                                {day.best_window?.label || '--'}
+                              </td>
+                              <td style={{padding: '10px 12px'}}>
+                                <span style={{
+                                  color: day.best_hour?.verdict?.color,
+                                  fontSize: 13, fontWeight: 700
+                                }}>
+                                  {day.best_hour?.verdict?.verdict}
+                                </span>
+                              </td>
+                              <td style={{padding: '10px 12px'}}>
+                                <div style={{
+                                  display: 'inline-block',
+                                  padding: '2px 8px',
+                                  borderRadius: 4,
+                                  background: getScoreBg(day.avg_verdict_score),
+                                  color: getScoreColor(day.avg_verdict_score),
+                                  fontSize: 12, fontWeight: 700, fontFamily: 'JetBrains Mono'
+                                }}>
+                                  {day.avg_verdict_score?.toFixed(2)}
+                                </div>
+                              </td>
+                              <td style={{padding: '10px 12px', textAlign: 'center'}}>
+                                <span style={{
+                                  color: day.excellent_count > 0 ? '#22c55e' : '#4a7090',
+                                  fontWeight: 700, fontSize: 14
+                                }}>
+                                  {day.excellent_count > 0 ? `⭐ ${day.excellent_count}` : '—'}
+                                </span>
+                              </td>
+                              <td style={{padding: '10px 12px', textAlign: 'center'}}>
+                                {forecast.historical_breach && idx === 0 ? (
+                                  <span style={{color: '#f59e0b', fontSize: 12}}>⚠️ نعم</span>
+                                ) : (
+                                  <span style={{color: '#22c55e', fontSize: 12}}>✅ لا</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ═══════════ TAB: BEST SPOTS ═══════════ */}
+          {activeMainTab === 'best-spots' && (
+            <>
+              {loadingBest && (
+                <div className="loading-container">
+                  <div className="loading-spinner" />
+                  <div className="loading-text">
+                    🔍 جارٍ مسح {spots.length + customSpots.length} موقع وتحليل الـ3 أيام القادمة...
+                  </div>
+                  <div style={{fontSize: 12, color: '#4a7090', textAlign: 'center', maxWidth: 300}}>
+                    هذا قد يستغرق 10-20 ثانية بسبب التحليل المتزامن لجميع المواقع
+                  </div>
+                </div>
+              )}
+
+              {!loadingBest && bestSpots && (
+                <div className="fade-in">
+
+                  {/* BEST SPOT RIGHT NOW */}
+                  {bestSpots.best_spot_now?.spot && (
+                    <div className="card glow-pulse" style={{
+                      marginBottom: 20,
+                      borderColor: '#22c55e',
+                      background: 'rgba(34,197,94,0.05)'
+                    }}>
+                      <div style={{
+                        fontSize: 11, color: '#22c55e',
+                        fontFamily: 'JetBrains Mono', letterSpacing: 2,
+                        marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8
+                      }}>
+                        <span style={{
+                          background: '#22c55e',
+                          borderRadius: 4,
+                          padding: '2px 8px',
+                          color: 'white', fontSize: 10
+                        }}>🔴 LIVE</span>
+                        أفضل موقع الآن
+                      </div>
+
+                      <div style={{display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap'}}>
+                        <div style={{fontSize: 40}}>🏆</div>
+                        <div style={{flex: 1}}>
+                          <div style={{fontSize: 22, fontWeight: 700, color: '#22c55e'}}>
+                            {bestSpots.best_spot_now.spot.name}
+                          </div>
+                          <div style={{fontSize: 13, color: '#4a7090', marginTop: 4, fontFamily: 'JetBrains Mono'}}>
+                            {bestSpots.best_spot_now.spot.name_en} · {bestSpots.best_spot_now.spot.region}
+                          </div>
+                          {bestSpots.best_spot_now.current && (
+                            <div style={{display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap'}}>
+                              <span style={{
+                                padding: '4px 12px',
+                                background: `${bestSpots.best_spot_now.current.verdict.color}20`,
+                                border: `1px solid ${bestSpots.best_spot_now.current.verdict.color}50`,
+                                borderRadius: 6,
+                                fontSize: 14, fontWeight: 700,
+                                color: bestSpots.best_spot_now.current.verdict.color
+                              }}>
+                                {bestSpots.best_spot_now.current.verdict.verdict}
+                              </span>
+                              <span style={{
+                                padding: '4px 12px',
+                                background: 'rgba(14,165,233,0.1)',
+                                border: '1px solid rgba(14,165,233,0.3)',
+                                borderRadius: 6,
+                                fontSize: 13, color: '#0ea5e9',
+                                fontFamily: 'JetBrains Mono'
+                              }}>
+                                🌊 {bestSpots.best_spot_now.current.swell_height.toFixed(2)}م / {bestSpots.best_spot_now.current.swell_period.toFixed(1)}ث
+                              </span>
+                              <span style={{
+                                padding: '4px 12px',
+                                background: 'rgba(245,158,11,0.1)',
+                                border: '1px solid rgba(245,158,11,0.3)',
+                                borderRadius: 6,
+                                fontSize: 13, color: '#f59e0b',
+                                fontFamily: 'JetBrains Mono'
+                              }}>
+                                💨 {bestSpots.best_spot_now.current.wind_speed_kmh} كم/س
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          className="btn btn-primary"
+                          onClick={() => fetchForecast(bestSpots.best_spot_now.spot)}
+                        >
+                          🔍 تفاصيل كاملة
+                        </button>
+                      </div>
+
+                      {bestSpots.best_spot_now.arabic_explanation && (
+                        <div style={{
+                          marginTop: 14,
+                          padding: '12px 16px',
+                          background: 'rgba(0,0,0,0.3)',
+                          borderRadius: 8,
+                          borderRight: '3px solid #22c55e',
+                          fontSize: 13, color: '#8ab4d4', lineHeight: 1.8
+                        }}>
+                          {bestSpots.best_spot_now.arabic_explanation}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* GOLDEN WINDOWS TABLE */}
+                  <div className="card" style={{marginBottom: 20}}>
+                    <div className="section-header">
+                      <div className="section-title">
+                        ⏰ جدول النوافذ الذهبية للصيد
+                      </div>
+                      <div style={{fontSize: 12, color: '#4a7090', fontFamily: 'JetBrains Mono'}}>
+                        {bestSpots.golden_windows?.length || 0} فرصة
+                      </div>
+                    </div>
+
+                    {(!bestSpots.golden_windows || bestSpots.golden_windows.length === 0) && (
+                      <div style={{
+                        textAlign: 'center', padding: '32px 16px',
+                        color: '#4a7090', fontSize: 14
+                      }}>
+                        🌪️ لا توجد نوافذ ذهبية في الـ3 أيام القادمة — ظروف صعبة عموماً
+                      </div>
+                    )}
+
+                    {(bestSpots.golden_windows || []).map((window, idx) => (
+                      <GoldenWindowRow
+                        key={idx}
+                        window={window}
+                        index={idx}
+                        onSelect={(w) => {
+                          const matchSpot = allSpots.find(s => s.id === w.spot_id);
+                          if (matchSpot) fetchForecast(matchSpot);
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* SPOT RANKINGS */}
+                  <div className="card">
+                    <div className="card-title">📊 ترتيب المواقع (الـ3 أيام)</div>
+                    {(bestSpots.spot_rankings || []).map((ranking, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 12,
+                          padding: '12px 0',
+                          borderBottom: '1px solid #0a1628',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => fetchForecast(ranking.spot)}
+                      >
+                        <div style={{
+                          fontSize: 20, fontWeight: 700, minWidth: 36, textAlign: 'center',
+                          color: idx === 0 ? '#ffd700' : idx === 1 ? '#c0c0c0' : idx === 2 ? '#cd7f32' : '#4a7090'
+                        }}>
+                          {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`}
+                        </div>
+                        <div style={{flex: 1}}>
+                          <div style={{fontSize: 14, fontWeight: 600, color: '#e2f0ff'}}>
+                            {ranking.spot.name}
+                          </div>
+                          <div style={{display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap'}}>
+                            <span style={{fontSize: 11, color: '#4a7090'}}>{ranking.spot.region}</span>
+                            <span style={{fontSize: 11, color: '#06b6d4', fontFamily: 'JetBrains Mono'}}>
+                              أفضل يوم: {ranking.best_day}
+                            </span>
+                            {ranking.historical_breach && (
+                              <span style={{fontSize: 11, color: '#f59e0b'}}>⚠️ اضطراب سابق</span>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{textAlign: 'center'}}>
+                          <div style={{
+                            fontSize: 15, fontWeight: 700,
+                            fontFamily: 'JetBrains Mono',
+                            color: getScoreColor(ranking.avg_score)
+                          }}>
+                            {ranking.avg_score?.toFixed(2)}
+                          </div>
+                          <div style={{fontSize: 10, color: '#4a7090', marginTop: 2}}>avg score</div>
+                        </div>
+                        <div style={{
+                          fontSize: 13, fontWeight: 600,
+                          color: '#22c55e',
+                          minWidth: 60, textAlign: 'center'
+                        }}>
+                          {ranking.excellent_total > 0 ? `⭐ ${ranking.excellent_total}` : '—'}
+                        </div>
+                        <button className="btn btn-ghost btn-sm" onClick={e => {
+                          e.stopPropagation();
+                          fetchForecast(ranking.spot);
+                        }}>
+                          🔍
+                        </button>
+                      </div>
+                    ))}
+
+                    <div style={{
+                      marginTop: 12,
+                      padding: '10px 14px',
+                      background: 'rgba(14,165,233,0.05)',
+                      borderRadius: 6,
+                      fontSize: 11, color: '#4a7090',
+                      fontFamily: 'JetBrains Mono'
+                    }}>
+                      ✅ تم تحليل {bestSpots.total_spots_analyzed} موقع ·
+                      Score: 1=ممتاز 2=ممكن 3=صعب 4=مستحيل
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {!loadingBest && !bestSpots && !error && (
+                <div style={{textAlign: 'center', padding: '60px 20px'}}>
+                  <div style={{fontSize: 48, marginBottom: 16}}>🏆</div>
+                  <div style={{fontSize: 16, color: '#8ab4d4', marginBottom: 12}}>
+                    اضغط على الزر أدناه لتحليل جميع المواقع
+                  </div>
+                  <button className="btn btn-success" onClick={fetchBestSpots}>
+                    🔍 ابدأ التحليل الشامل
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+        </main>
+      </div>
+
+      {/* TOAST NOTIFICATION */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// Mount
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
 </script>
 </body>
 </html>
