@@ -10,9 +10,9 @@ from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timezone, timedelta
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger("surfcast-v7.2")
+logger = logging.getLogger("surfcast-v7.3")
 
-app = FastAPI(title="Tunisia Surfcasting Reference API", version="7.2.0", docs_url="/docs")
+app = FastAPI(title="Tunisia Surfcasting Reference API", version="7.3.0", docs_url="/docs")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # ==========================================
@@ -246,7 +246,8 @@ def analyze_window(w_h: dict, m_h: dict, start_idx: int, end_idx: int, beach_dir
     sst = safe_get(m_h.get("sea_surface_temperature",[]), start_idx, 18.0)
     has_lightning = check_thunderstorm_risk(w_codes)
     mid_t = w_h.get("time",[])[(start_idx+end_idx)//2] if (start_idx+end_idx)//2 < len(w_h.get("time",[])) else ""
-    utc_h = datetime.fromisoformat(mid_t.replace("Z","+00:00")).hour if mid_t else 12
+    # ✅ تصحيح التوقيت: استخدام naive datetime للمقارنة الآمنة
+    utc_h = datetime.fromisoformat(mid_t.replace("Z","")).hour if mid_t else 12
     low_tide = corrected_tide_window(utc_h, region, p_now, avg_ws, dom_wind, moon["tide_amplitude"])
     
     rip_sc = (2 if avg_sp>=12 else 0) + (1 if avg_eff>1.0 else 0) + (2 if low_tide else 0)
@@ -293,8 +294,9 @@ def analyze_window(w_h: dict, m_h: dict, start_idx: int, end_idx: int, beach_dir
     else:
         v, e = "غير مناسب", "ظروف قاسية أو غير مستقرة. يُنصح بالتأجيل."
     
-    v, e = adjust_for_sst(sst, v, e)
-    fc_hours = max(0, (datetime.fromisoformat(mid_t.replace("Z","+00:00")) - datetime.now(timezone.utc)).total_seconds()/3600) if mid_t else 0
+    v, e = adjust_for_sst(sst, v, e)    
+    # ✅ تصحيح التوقيت: استخدام naive datetime لحساب الفرق بأمان
+    fc_hours = max(0, (datetime.fromisoformat(mid_t.replace("Z","")) - datetime.now(timezone.utc).replace(tzinfo=None)).total_seconds()/3600) if mid_t else 0
     confidence = calculate_confidence(fc_hours, data_variance, stability)
     if confidence < 60 or data_variance > 1.2:
         if v == "ممتاز": v, e = "جيد", e + " (ثقة منخفضة/بيانات متقلبة)"
@@ -341,14 +343,12 @@ class SpotReq(BaseModel):
     def norm_face(cls, v): return v.strip().upper()
 
 @app.get("/")
-async def root(): return {"service":"Tunisia Surfcasting Reference API","version":"7.2.0","status":"online","spots":len(TUNISIAN_SPOTS),"micro_climate_correction":True}
-
+async def root(): return {"service":"Tunisia Surfcasting Reference API","version":"7.3.0","status":"online","spots":len(TUNISIAN_SPOTS),"micro_climate_correction":True}
 @app.get("/health")
 async def health(req: Request): return JSONResponse({"healthy":True,"ts":datetime.now(timezone.utc).isoformat()})
 
 @app.get("/audit")
 async def audit_info():
-    """نقطة شفافية: تعرض حدود النموذج ومصادر البيانات"""
     return {
         "model_resolution_km": 9,
         "update_frequency_hours": "1-3",
@@ -363,7 +363,7 @@ async def audit_info():
 
 @app.post("/analyze")
 async def analyze(req: AnalyzeReq):
-    logger.info(f"Ref Analyze v7.2: {req.lat},{req.lon},{req.region}/{req.delegation}")
+    logger.info(f"Ref Analyze v7.3: {req.lat},{req.lon},{req.region}/{req.delegation}")
     async with httpx.AsyncClient(timeout=20) as c:
         w_url = f"https://api.open-meteo.com/v1/forecast?latitude={req.lat}&longitude={req.lon}&hourly=wind_speed_10m,wind_direction_10m,surface_pressure,precipitation,weather_code,visibility&past_days=2&forecast_days=2&timezone=auto"
         m_url = f"https://marine-api.open-meteo.com/v1/marine?latitude={req.lat}&longitude={req.lon}&hourly=swell_wave_height,swell_wave_period,swell_wave_direction,sea_surface_temperature&past_days=2&forecast_days=2&timezone=auto"
@@ -375,8 +375,9 @@ async def analyze(req: AnalyzeReq):
         
         w_h, m_h = w_r.json().get("hourly",{}), m_r.json().get("hourly",{})
         times = w_h.get("time",[])
-        now_utc = datetime.now(timezone.utc)
-        now_idx = min(range(len(times)), key=lambda i: abs(datetime.fromisoformat(times[i].replace("Z","+00:00")) - now_utc)) if times else 0
+        # ✅ تصحيح التوقيت: تحويل now_utc إلى naive لمطابقة بيانات Open-Meteo
+        now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+        now_idx = min(range(len(times)), key=lambda i: abs(datetime.fromisoformat(times[i].replace("Z","")) - now_utc)) if times else 0
         
         moon = get_moon_data(now_utc)
         morning = analyze_window(w_h, m_h, now_idx, min(now_idx+6, len(times)), req.beach_direction, req.region, req.delegation, req.lat, moon)
@@ -391,9 +392,9 @@ async def analyze(req: AnalyzeReq):
         return {
             "location": {"lat":req.lat,"lon":req.lon,"facing":req.beach_direction,"region":req.region,"delegation":req.delegation},
             "astronomy": {"moon": moon, "water_temp_c": round(water_temp,1)},
-            "best_window": best_window, "migration_advice": migration_advice,
-            "windows": {"morning": morning, "evening": evening, "night": night},
-            "pro_tips": [                f"نشاط الأسماك مضاعف بـ {moon['activity_boost']}x بسبب طور القمر",
+            "best_window": best_window, "migration_advice": migration_advice,            "windows": {"morning": morning, "evening": evening, "night": night},
+            "pro_tips": [
+                f"نشاط الأسماك مضاعف بـ {moon['activity_boost']}x بسبب طور القمر",
                 "استخدم خيطاً أرفع (0.30-0.35mm) إذا كانت الرؤية > 10كم والماء صافٍ",
                 "عند ظهور علم أحمر أو خطر صواعق، لا تضيع الوقت: غيّر الواجهة أو انسحب فوراً",
                 "الاتجاهات مُصححة طبوغرافياً محلياً، والثقة الإحصائية تحمي من المفاجآت"
@@ -414,7 +415,8 @@ async def best_spots(custom: List[SpotReq]):
                 w.raise_for_status(); m.raise_for_status()
                 w_h, m_h = w.json().get("hourly",{}), m.json().get("hourly",{})
                 times = w_h.get("time",[])
-                now_idx = min(range(len(times)), key=lambda i: abs(datetime.fromisoformat(times[i].replace("Z","+00:00")) - datetime.now(timezone.utc))) if times else 0
+                # ✅ تصحيح التوقيت
+                now_idx = min(range(len(times)), key=lambda i: abs(datetime.fromisoformat(times[i].replace("Z","")) - datetime.now(timezone.utc).replace(tzinfo=None))) if times else 0
                 moon = get_moon_data(datetime.now(timezone.utc))
                 res = analyze_window(w_h, m_h, now_idx, min(now_idx+8, len(times)), s["facing"], s["region"], s["name"], s["lat"], moon)
                 if res:
