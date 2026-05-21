@@ -3,120 +3,248 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>المرشد الواقعي v7 | Surfcasting Tunisia</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <title>المرشد التكتيكي لصيد السورفكاستينغ بتونس</title>
+    <!-- مكتبة الخرائط Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com" />
+    <script src="https://unpkg.com"></script>
     <style>
         :root {
-            --bg: #0d1117; --card: #161b22; --card-border: #30363d;
-            --text: #e6edf3; --text-secondary: #8b949e;
-            --accent: #58a6ff; --highlight: #e94560;
-            --excellent: #3fb950; --possible: #58a6ff;
-            --difficult: #d29922; --impossible: #f85149;
-            --font: 'Tajawal', sans-serif;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --accent-color: #38bdf8;
+            --success: #22c55e;
+            --warning: #eab308;
+            --danger: #ef4444;
         }
-        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
-        body { font-family: var(--font); background: var(--bg); color: var(--text); padding: 12px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        .card { background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-        .card h2 { margin-bottom: 12px; }
-        button { width: 100%; padding: 12px; border-radius: 8px; border: none; background: var(--highlight); color: white; font-family: var(--font); font-size: 1.2rem; font-weight: 700; cursor: pointer; }
-        #loader { display: none; text-align: center; padding: 30px; font-size: 1.2rem; color: var(--accent); }
-        
-        /* Decision Maker Results */
-        #decision-results .spot-card {
-            background: var(--bg); border: 1px solid var(--card-border); border-radius: 8px;
-            padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 10px;
         }
-        .spot-info h4 { font-size: 1.1rem; margin: 0; }
-        .spot-info p { font-size: 0.9rem; color: var(--text-secondary); margin: 4px 0; }
-        .spot-verdict { font-size: 1.2rem; font-weight: 700; padding: 6px 12px; border-radius: 6px; }
-        .debris-warning { color: var(--difficult); font-size: 0.8rem; font-weight: 700; }
-        .fish-predictions { display: flex; gap: 6px; margin-top: 8px; }
-        .fish-tag { background-color: var(--accent); color: var(--bg); font-size: 0.8rem; padding: 2px 8px; border-radius: 12px; font-weight: 500; }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: var(--accent-color);
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        select, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+        button {
+            background-color: var(--accent-color);
+            color: #0f172a;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            transition: 0.3s;
+        }
+        button:hover { background-color: #0ea5e9; }
+        #map {
+            height: 300px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            z-index: 1;
+        }
+        .verdict-box {
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .risk-meters {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .risk-card {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            background: #334155;
+            font-size: 0.85rem;
+        }
+        .risk-val { font-weight: bold; margin-top: 5px; }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            background: #475569;
+            margin: 2px;
+        }
+        .status-none { color: var(--success); }
+        .status-low { color: #60a5fa; }
+        .status-high { color: var(--warning); }
+        .status-confirmed { color: var(--danger); }
     </style>
 </head>
 <body>
+
 <div class="container">
-    <header style="text-align:center; padding: 20px 0;">
-        <h1>🎯 المرشد الواقعي v7</h1>
-        <p>يحلل جميع الأماكن مع الأخذ في الاعتبار الموسم ودرجة حرارة الماء</p>
-    </header>
+    <h1>⚓ المساعد التكتيكي للسورفكاستينغ</h1>
+    
+    <!-- الخريطة واختيار السبوت -->
+    <div id="map"></div>
 
     <div class="card">
-        <button id="decision-btn">🔍 ابحث عن أفضل فرصة لليوم</button>
+        <label>اختر الولاية والشاطئ المبرمج:</label>
+        <select id="spotSelector" onchange="navigatePredefinedSpot()">
+            <option value="">-- اختر سبوت مبرمج --</option>
+            <optgroup label="تونس العاصمة">
+                <option value="36.9150,10.1550,20">قلعة الأندلس</option>
+                <option value="36.9380,10.2150,45">شاطئ رواد</option>
+            </optgroup>
+            <optgroup label="نابل">
+                <option value="36.8500,11.1000,70">قليبية</option>
+                <option value="37.0500,11.0150,315">الهوارية</option>
+                <option value="36.8850,11.1150,90">حمام الغزاز</option>
+            </select>
+        <label style="display:block; margin-top:10px;">اتجاه مواجهة الشاطئ بالدرجات:</label>
+        <input type="number" id="beachAngle" value="90" style="width:96%; padding:10px; background:#0f172a; color:#fff; border:1px solid #475569; border-radius:8px;">
+        <button style="margin-top:15px;" onclick="getAnalysisFromAPI()">تحليل هذا السبوت الآن 🔍</button>
+        <button style="margin-top:10px; background-color:#22c55e;" onclick="getBestSpot()">ابحث عن أفضل سبوت في تونس 🏆</button>
     </div>
 
-    <div id="loader">⏳ جاري تحليل جميع الأماكن... هذه العملية قد تستغرق دقيقة...</div>
+    <!-- لوحة عرض النتائج التكتيكية -->
+    <div class="card" id="resultCard" style="display:none;">
+        <h2 id="resultTitle" style="color:var(--accent-color); margin-top:0;">تقرير السبوت:</h2>
+        <div id="verdictOutput" class="verdict-box">--</div>
+        
+        <p style="margin-top:15px;"><strong>التحليل التفسيري:</strong> <span id="explanationOutput">--</span></p>
+        <p><strong>الرصاص المقترح:</strong> <span id="sinkerOutput" style="color:var(--accent-color); font-weight:bold;">--</span></p>
+        
+        <p><strong>الأسماك المتوقع نشاطها الآن:</strong></p>
+        <div id="fishOutput">--</div>
 
-    <div id="decision-results" style="display:none;">
-        <div class="card">
-            <h2>خلاصة اليوم</h2>
-            <div id="spot-list"></div>
+        <div class="risk-meters">
+            <div class="risk-card">الأعشاب<div id="weedRisk" class="risk-val">--</div></div>
+            <div class="risk-card">تيار جانبي<div id="driftRisk" class="risk-val">--</div></div>
+            <div class="risk-card">تيار ساحب<div id="ripRisk" class="risk-val">--</div></div>
         </div>
     </div>
 </div>
 
 <script>
-const API = "https://fishing-backend-by6c.onrender.com";
-const V_COLORS = {'ممتاز':'var(--excellent)','ممكن':'var(--possible)','صعب':'var(--difficult)','مستحيل':'var(--impossible)'};
+    // ⚠️ ضع رابط السيرفر الخاص بك من Render هنا بين علامتي التنصيص (دون وضع شَرطة / في النهاية)
+    const BACKEND_URL = "https://onrender.com"; 
 
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('decision-btn').addEventListener('click', getDecision);
-});
+    // إعداد الخريطة الافتراضية على تونس
+    let map = L.map('map').setView([36.8065, 10.1815], 8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    let currentMarker = null;
 
-async function getDecision() {
-    const loader = document.getElementById('loader');
-    const resultsDiv = document.getElementById('decision-results');
-    const spotList = document.getElementById('spot-list');
+    map.on('click', function(e) {
+        let lat = e.latlng.lat.toFixed(4);
+        let lon = e.latlng.lng.toFixed(4);
+        if(currentMarker) map.removeLayer(currentMarker);
+        currentMarker = L.marker([lat, lon]).addTo(map).bindPopup("سبوت مخصص").openPopup();
+        document.getElementById('spotSelector').value = "";
+    });
 
-    loader.style.display = 'block';
-    resultsDiv.style.display = 'none';
-    spotList.innerHTML = '';
+    function navigatePredefinedSpot() {
+        let val = document.getElementById('spotSelector').value;
+        if(!val) return;
+        let [lat, lon, angle] = val.split(',');
+        document.getElementById('beachAngle').value = angle;
+        map.setView([lat, lon], 12);
+        if(currentMarker) map.removeLayer(currentMarker);
+        currentMarker = L.marker([lat, lon]).addTo(map);
+    }
 
-    try {
-        const response = await fetch(`${API}/decision-maker`);
-        if (!response.ok) throw new Error('فشل في الاتصال بالخادم');
-        const data = await response.json();
+    async function getAnalysisFromAPI() {
+        let lat, lon, angle = document.getElementById('beachAngle').value;
+        let val = document.getElementById('spotSelector').value;
         
-        if (data.length === 0) {
-            spotList.innerHTML = '<p>لم يتم العثور على فرص جيدة اليوم.</p>';
+        if(val) {
+            [lat, lon] = val.split(',');
+        } else if(currentMarker) {
+            lat = currentMarker.getLatLng().lat;
+            lon = currentMarker.getLatLng().lng;
         } else {
-            data.forEach(spot => {
-                const card = document.createElement('div');
-                card.className = 'spot-card';
-                
-                let debrisWarning = spot.persistent_debris ? '<p class="debris-warning">⚠️ تحذير: مخلفات عاصفة الأمس</p>' : '';
-                
-                let fishTags = '';
-                if (spot.likely_fish && spot.likely_fish.length > 0) {
-                    fishTags = '<div class="fish-predictions">' + spot.likely_fish.map(fish => `<span class="fish-tag">${fish}</span>`).join('') + '</div>';
-                }
-
-                card.innerHTML = `
-                    <div class="spot-info">
-                        <h4>${spot.spot_name}</h4>
-                        <p>أفضل فرصة: ${spot.best_period}</p>
-                        ${debrisWarning}
-                        ${fishTags}
-                    </div>
-                    <div class="spot-verdict" style="background-color:${V_COLORS[spot.verdict]}; color: #0d1117;">
-                        ${spot.verdict}
-                    </div>
-                `;
-                spotList.appendChild(card);
-            });
+            alert("الرجاء اختيار شاطئ من القائمة أو الضغط على الخريطة أولاً!");
+            return;
         }
 
-        resultsDiv.style.display = 'block';
-        resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        try {
+            document.getElementById('resultCard').style.display = "block";
+            document.getElementById('verdictOutput').innerText = "جاري جلب البيانات...";
+            
+            let res = await fetch(`${BACKEND_URL}/forecast?lat=${lat}&lon=${lon}&angle=${angle}`);
+            let data = await res.json();
+            
+            // قراءة الساعة الحالية من مصفوفة التحليل
+            let currentData = data.analysis[0]; 
+            
+            let vOut = document.getElementById('verdictOutput');
+            vOut.innerText = currentData.verdict;
+            if(currentData.verdict === "ممتاز") vOut.style.background = "var(--success)";
+            if(currentData.verdict === "ممكن") vOut.style.background = "#2563eb";
+            if(currentData.verdict === "صعب جداً") vOut.style.background = "var(--warning)";
+            if(currentData.verdict === "مستحيل") vOut.style.background = "var(--danger)";
 
-    } catch (error) {
-        alert('حدث خطأ: ' + error.message);
-    } finally {
-        loader.style.display = 'none';
+            document.getElementById('explanationOutput').innerText = currentData.explanation;
+            document.getElementById('sinkerOutput').innerText = currentData.sinker_advice;
+            
+            // عرض السمك
+            let fishDiv = document.getElementById('fishOutput');
+            fishDiv.innerHTML = currentData.likely_fish.length ? 
+                currentData.likely_fish.map(f => `<span class="badge">${f}</span>`).join('') : "نشاط ضعيف للأسماك";
+
+            // المخاطر
+            setRiskStyle('weedRisk', currentData.risks.seaweed);
+            setRiskStyle('driftRisk', currentData.risks.longshore_drift);
+            setRiskStyle('ripRisk', currentData.risks.rip_current);
+
+        } catch (err) {
+            alert("خطأ في الاتصال بالباكيند. تأكد من تشغيل سيرفر Render وتحديث الرابط!");
+        }
     }
-}
+
+    function setRiskStyle(elementId, value) {
+        let el = document.getElementById(elementId);
+        el.innerText = value;
+        el.className = "risk-val";
+        if(value === "None") el.classList.add('status-none');
+        if(value === "Low") el.classList.add('status-low');
+        if(value === "High") el.classList.add('status-high');
+        if(value === "Confirmed") el.classList.add('status-confirmed');
+    }
+
+    async function getBestSpot() {
+        try {
+            alert("جاري فحص جميع شواطئ تونس المبرمجة حالياً... انتظر ثانية.");
+            let res = await fetch(`${BACKEND_URL}/decision-maker`);
+            let data = await res.json();
+            let best = data[0];
+            alert(`🏆 أفضل سبوت للصيد الآن هو: ${best.spot_name}\nالتقييم: ${best.verdict}\nالسبب: ${best.explanation}\nالرصاص: ${best.sinker_advice}`);
+        } catch(e) {
+            alert("تعذر جلب صانع القرار.");
+        }
+    }
 </script>
 </body>
 </html>
