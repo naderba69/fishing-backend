@@ -1,7 +1,7 @@
 # main.py - v9.0 FINAL PRODUCTION - All Features Complete
 # Install: pip install fastapi uvicorn httpx
 # Run: uvicorn main:app --reload
-
+import logging
 import asyncio
 import httpx
 import math
