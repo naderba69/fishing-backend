@@ -1,37 +1,31 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>🎣 محرك قرار الصيد بالسيرف — تونس</title>
-
-  <!-- TailwindCSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Leaflet.js -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
-    /* ═══════════════════════════════════════════════════════════
-       GLOBAL DARK THEME + CUSTOM PROPERTIES
-    ═══════════════════════════════════════════════════════════ */
+    /* ══════════════════════════════════════════
+       GLOBAL DARK THEME
+    ══════════════════════════════════════════ */
     :root {
-      --bg-primary: #0a0f1a;
-      --bg-card: #111827;
-      --bg-card2: #1a2235;
-      --accent-blue: #3b82f6;
-      --accent-cyan: #06b6d4;
-      --accent-green: #10b981;
+      --bg-primary:    #0a0f1a;
+      --bg-card:       #111827;
+      --bg-card2:      #1a2235;
+      --accent-blue:   #3b82f6;
+      --accent-cyan:   #06b6d4;
+      --accent-green:  #10b981;
       --accent-yellow: #f59e0b;
-      --accent-red: #ef4444;
-      --text-primary: #e2e8f0;
-      --text-secondary: #94a3b8;
-      --border-color: #1e3a5f;
+      --accent-red:    #ef4444;
+      --text-primary:  #e2e8f0;
+      --text-secondary:#94a3b8;
+      --border-color:  #1e3a5f;
     }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: var(--bg-primary);
       color: var(--text-primary);
@@ -39,1490 +33,1270 @@
       min-height: 100vh;
     }
 
-    /* ── Map Container ──────────────────────────────────────── */
+    /* ── Carte ──────────────────────────────── */
     #map-container {
-      position: relative;
-      width: 100%;
-      height: 420px;
-      border-radius: 12px;
-      overflow: hidden;
+      position: relative; width: 100%; height: 420px;
+      border-radius: 12px; overflow: hidden;
       border: 2px solid var(--border-color);
     }
-
     #map { width: 100%; height: 100%; }
 
-    /* Dark tile filter */
-    .leaflet-tile { filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(1.1); }
+    /* FIX #18: filtre dark seulement sur les tiles, pas sur les markers */
+    .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(1.1); }
     .leaflet-container { background: #0a0f1a !important; }
 
-    /* ── Precision Visor / Crosshair ────────────────────────── */
+    /* ── Viseur / Crosshair ─────────────────── */
     #visor {
-      position: absolute;
-      top: 50%; left: 50%;
+      position: absolute; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      width: 60px; height: 60px;
-      pointer-events: none;
-      z-index: 1000;
+      width: 64px; height: 64px;
+      pointer-events: none; z-index: 1000;
     }
-
-    #visor::before,
-    #visor::after {
-      content: '';
-      position: absolute;
+    #visor::before, #visor::after {
+      content: ''; position: absolute;
       background: rgba(6, 182, 212, 0.9);
     }
-
-    /* Vertical line */
-    #visor::before {
-      left: 50%; top: 0;
-      width: 2px; height: 100%;
-      transform: translateX(-50%);
-    }
-
-    /* Horizontal line */
-    #visor::after {
-      top: 50%; left: 0;
-      height: 2px; width: 100%;
-      transform: translateY(-50%);
-    }
-
-    /* Visor center dot */
+    #visor::before { left: 50%; top: 0; width: 2px; height: 100%; transform: translateX(-50%); }
+    #visor::after  { top: 50%; left: 0; height: 2px; width: 100%; transform: translateY(-50%); }
     #visor-dot {
-      position: absolute;
-      top: 50%; left: 50%;
+      position: absolute; top: 50%; left: 50%;
       width: 10px; height: 10px;
-      background: var(--accent-cyan);
-      border-radius: 50%;
+      background: var(--accent-cyan); border-radius: 50%;
       transform: translate(-50%, -50%);
       box-shadow: 0 0 12px var(--accent-cyan), 0 0 24px rgba(6,182,212,0.4);
       animation: visor-pulse 2s infinite;
     }
-
-    /* Visor corner marks */
-    .visor-corner {
-      position: absolute;
-      width: 14px; height: 14px;
-      border-color: var(--accent-cyan);
-      border-style: solid;
-      opacity: 0.8;
-    }
-    .visor-corner.tl { top: 0; left: 0; border-width: 2px 0 0 2px; }
-    .visor-corner.tr { top: 0; right: 0; border-width: 2px 2px 0 0; }
-    .visor-corner.bl { bottom: 0; left: 0; border-width: 0 0 2px 2px; }
+    .visor-corner { position: absolute; width: 14px; height: 14px; border-color: var(--accent-cyan); border-style: solid; opacity: 0.85; }
+    .visor-corner.tl { top: 0;    left: 0;  border-width: 2px 0 0 2px; }
+    .visor-corner.tr { top: 0;    right: 0; border-width: 2px 2px 0 0; }
+    .visor-corner.bl { bottom: 0; left: 0;  border-width: 0 0 2px 2px; }
     .visor-corner.br { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
-
     @keyframes visor-pulse {
-      0%, 100% { box-shadow: 0 0 8px var(--accent-cyan), 0 0 16px rgba(6,182,212,0.3); }
-      50% { box-shadow: 0 0 16px var(--accent-cyan), 0 0 32px rgba(6,182,212,0.6); }
+      0%,100% { box-shadow: 0 0 8px var(--accent-cyan), 0 0 16px rgba(6,182,212,0.3); }
+      50%      { box-shadow: 0 0 16px var(--accent-cyan), 0 0 32px rgba(6,182,212,0.6); }
     }
 
-    /* ── Cards ──────────────────────────────────────────────── */
-    .card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 16px;
-    }
+    /* ── Cards ──────────────────────────────── */
+    .card  { background: var(--bg-card);  border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; }
+    .card2 { background: var(--bg-card2); border: 1px solid #1e3a5f; border-radius: 8px;  padding: 12px; }
 
-    .card2 {
-      background: var(--bg-card2);
-      border: 1px solid #1e3a5f;
-      border-radius: 8px;
-      padding: 12px;
-    }
-
-    /* ── Circular Gauge ─────────────────────────────────────── */
-    .gauge-wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-    }
-
+    /* ── Circular Gauges ────────────────────── */
+    .gauge-wrapper { display: flex; flex-direction: column; align-items: center; gap: 6px; }
     .gauge-svg { transform: rotate(-90deg); }
+    .gauge-bg   { fill: none; stroke: #1e3a5f; stroke-width: 8; }
+    .gauge-fill { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1.2s ease; }
+    .gauge-text { font-size: 12px; font-weight: 700; fill: var(--text-primary); text-anchor: middle; dominant-baseline: central; }
+    .gauge-label { font-size: 10px; text-align: center; color: var(--text-secondary); max-width: 72px; line-height: 1.3; }
 
-    .gauge-bg { fill: none; stroke: #1e3a5f; stroke-width: 8; }
-    .gauge-fill {
-      fill: none;
-      stroke-width: 8;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 1s ease;
-    }
-
-    .gauge-text {
-      font-size: 13px;
-      font-weight: 700;
-      fill: var(--text-primary);
-      text-anchor: middle;
-      dominant-baseline: central;
-    }
-
-    .gauge-label {
-      font-size: 10px;
-      text-align: center;
-      color: var(--text-secondary);
-      max-width: 70px;
-      line-height: 1.2;
-    }
-
-    /* ── Verdict Banner ─────────────────────────────────────── */
+    /* ── Verdict Banner ─────────────────────── */
     #verdict-banner {
-      border-radius: 12px;
-      padding: 20px;
-      text-align: center;
-      font-size: 1.6rem;
-      font-weight: 900;
-      letter-spacing: 1px;
-      border: 2px solid;
-      transition: all 0.5s ease;
+      border-radius: 12px; padding: 20px; text-align: center;
+      font-size: 1.5rem; font-weight: 900; letter-spacing: 1px;
+      border: 2px solid; transition: all 0.5s ease;
     }
+    .verdict-approved { background: linear-gradient(135deg,#064e3b,#065f46); border-color: var(--accent-green); color: var(--accent-green); box-shadow: 0 0 30px rgba(16,185,129,0.3); }
+    .verdict-change   { background: linear-gradient(135deg,#450a0a,#7f1d1d); border-color: var(--accent-red);   color: var(--accent-red);   box-shadow: 0 0 30px rgba(239,68,68,0.3); }
+    .verdict-pending  { background: linear-gradient(135deg,#1e1b4b,#312e81); border-color: #6366f1;             color: #a5b4fc; }
 
-    .verdict-approved {
-      background: linear-gradient(135deg, #064e3b, #065f46);
-      border-color: var(--accent-green);
-      color: var(--accent-green);
-      box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
-    }
+    /* ── Score Bar ──────────────────────────── */
+    .score-bar-track { width: 100%; height: 10px; background: #1e2d45; border-radius: 5px; overflow: hidden; }
+    .score-bar-fill  { height: 100%; border-radius: 5px; transition: width 1.2s ease; }
 
-    .verdict-change {
-      background: linear-gradient(135deg, #450a0a, #7f1d1d);
-      border-color: var(--accent-red);
-      color: var(--accent-red);
-      box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
-    }
+    /* ── Fish Bars ──────────────────────────── */
+    .fish-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .fish-bar-label { font-size: 11.5px; min-width: 120px; color: var(--text-secondary); }
+    .fish-bar-track { flex: 1; height: 9px; background: #1e2d45; border-radius: 4px; overflow: hidden; }
+    .fish-bar-fill  { height: 100%; border-radius: 4px; transition: width 1.2s ease; }
+    .fish-pct { font-size: 11.5px; font-weight: 700; min-width: 40px; text-align: right; }
 
-    .verdict-pending {
-      background: linear-gradient(135deg, #1e1b4b, #312e81);
-      border-color: #6366f1;
-      color: #a5b4fc;
-    }
-
-    /* ── Score Bar ──────────────────────────────────────────── */
-    .score-bar-wrapper { width: 100%; }
-    .score-bar-track {
-      width: 100%;
-      height: 10px;
-      background: #1e2d45;
-      border-radius: 5px;
-      overflow: hidden;
-    }
-    .score-bar-fill {
-      height: 100%;
-      border-radius: 5px;
-      transition: width 1.2s ease;
-    }
-
-    /* ── Fish Activity Bar ──────────────────────────────────── */
-    .fish-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
-    .fish-bar-label {
-      font-size: 11px;
-      min-width: 110px;
-      color: var(--text-secondary);
-    }
-    .fish-bar-track {
-      flex: 1;
-      height: 8px;
-      background: #1e2d45;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    .fish-bar-fill {
-      height: 100%;
-      border-radius: 4px;
-      transition: width 1.2s ease;
-    }
-    .fish-pct {
-      font-size: 11px;
-      font-weight: 700;
-      min-width: 36px;
-      text-align: right;
-    }
-
-    /* ── Loading Spinner ────────────────────────────────────── */
-    .spinner {
-      width: 48px; height: 48px;
-      border: 4px solid #1e3a5f;
-      border-top-color: var(--accent-cyan);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 24px auto;
-    }
+    /* ── Spinner ────────────────────────────── */
+    .spinner { width: 48px; height: 48px; border: 4px solid #1e3a5f; border-top-color: var(--accent-cyan); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 24px auto; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Vector Badge ───────────────────────────────────────── */
-    .vector-badge {
-      display: inline-block;
-      padding: 2px 10px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-    }
-    .onshore { background: #065f46; color: #6ee7b7; }
+    /* ── Vector Badges ──────────────────────── */
+    .vector-badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+    .onshore   { background: #065f46; color: #6ee7b7; }
     .longshore { background: #7f1d1d; color: #fca5a5; }
-    .offshore { background: #1e3a5f; color: #93c5fd; }
+    .offshore  { background: #1e3a5f; color: #93c5fd; }
 
-    /* ── Report Box ─────────────────────────────────────────── */
+    /* ── Report Box ─────────────────────────── */
     #report-box {
-      background: #070d1a;
-      border: 1px solid #1e3a5f;
-      border-radius: 8px;
-      padding: 16px;
-      font-family: 'Courier New', monospace;
-      font-size: 11.5px;
-      line-height: 1.7;
-      color: #94e2d4;
-      max-height: 400px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      word-break: break-word;
+      background: #070d1a; border: 1px solid #1e3a5f; border-radius: 8px;
+      padding: 16px; font-family: 'Courier New', monospace; font-size: 11.5px;
+      line-height: 1.75; color: #94e2d4; max-height: 420px; overflow-y: auto;
+      /* FIX #19: RTL-safe pre-wrap */
+      white-space: pre-wrap; word-break: break-word; direction: rtl; text-align: right;
     }
 
-    /* ── Leaderboard Entry ──────────────────────────────────── */
+    /* ── Leaderboard ────────────────────────── */
     .leaderboard-entry {
-      background: var(--bg-card2);
-      border-radius: 10px;
-      padding: 14px;
-      border-left: 4px solid;
-      margin-bottom: 10px;
-      transition: transform 0.2s ease;
+      background: var(--bg-card2); border-radius: 10px; padding: 14px;
+      border-left: 4px solid; margin-bottom: 10px; transition: transform 0.2s ease;
     }
     .leaderboard-entry:hover { transform: translateX(-4px); }
-    .rank-gold { border-color: #f59e0b; }
+    .rank-gold   { border-color: #f59e0b; }
     .rank-silver { border-color: #94a3b8; }
     .rank-bronze { border-color: #b45309; }
 
-    /* ── Coordinates Display ────────────────────────────────── */
+    /* ── Coords Display ─────────────────────── */
     #coords-display {
-      background: #070d1a;
-      border: 1px solid var(--accent-cyan);
-      border-radius: 8px;
-      padding: 10px 16px;
-      font-family: monospace;
-      font-size: 13px;
-      color: var(--accent-cyan);
-      letter-spacing: 0.5px;
+      background: #070d1a; border: 1px solid var(--accent-cyan);
+      border-radius: 8px; padding: 8px 14px;
+      font-family: monospace; font-size: 12px; color: var(--accent-cyan);
     }
 
-    /* ── Alert Badge ────────────────────────────────────────── */
-    .alert-badge {
-      background: #450a0a;
-      border: 1px solid var(--accent-red);
-      border-radius: 6px;
-      padding: 6px 12px;
-      font-size: 11px;
-      color: #fca5a5;
+    /* ── Tabs ───────────────────────────────── */
+    .tab-btn {
+      padding: 8px 16px; border-radius: 6px; font-size: 12.5px;
+      cursor: pointer; transition: all 0.2s; border: 1px solid transparent;
+    }
+    .tab-btn.active { background: var(--accent-cyan); color: #0a0f1a; font-weight: 700; }
+    .tab-btn:not(.active) { background: var(--bg-card2); color: var(--text-secondary); border-color: var(--border-color); }
+    /* FIX #17: tab panels gérés par data-tab, plus par onclick text matching */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Tide bar ───────────────────────────── */
+    .tide-bar   { width: 100%; height: 6px; background: #1e2d45; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+    .tide-fill  { height: 100%; background: linear-gradient(90deg,#1d4ed8,#06b6d4); border-radius: 3px; transition: width 1s ease; }
+
+    /* ── Forecast item ──────────────────────── */
+    .forecast-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; background: #0d1728; border-radius: 6px;
+      margin-bottom: 6px; border-left: 3px solid var(--accent-blue); font-size: 12px;
     }
 
-    /* ── Scrollbar Styling ──────────────────────────────────── */
+    /* ── Wind indicator ─────────────────────── */
+    .wind-arrow {
+      display: inline-block;
+      transform-origin: center;
+      font-size: 16px;
+      transition: transform 0.5s ease;
+    }
+
+    /* ── Scrollbar ──────────────────────────── */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: #0a0f1a; }
     ::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 3px; }
 
-    /* ── Responsive Grid ────────────────────────────────────── */
-    @media (max-width: 768px) {
-      .desktop-grid { display: block !important; }
-      .desktop-grid > * { margin-bottom: 16px; }
-    }
-
-    /* ── Tab System ─────────────────────────────────────────── */
-    .tab-btn {
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.2s;
-      border: 1px solid transparent;
-    }
-    .tab-btn.active {
-      background: var(--accent-cyan);
-      color: #0a0f1a;
-      font-weight: 700;
-    }
-    .tab-btn:not(.active) {
-      background: var(--bg-card2);
-      color: var(--text-secondary);
-      border-color: var(--border-color);
-    }
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-
-    /* ── Tidal Indicator ────────────────────────────────────── */
-    .tide-bar {
-      width: 100%;
-      height: 6px;
-      background: #1e2d45;
-      border-radius: 3px;
-      overflow: hidden;
-      margin-top: 4px;
-    }
-    .tide-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #1d4ed8, #06b6d4);
-      border-radius: 3px;
-      transition: width 1s ease;
-    }
-
-    /* ── Forecast Timeline ──────────────────────────────────── */
-    .forecast-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 12px;
-      background: #0d1728;
-      border-radius: 6px;
-      margin-bottom: 6px;
-      border-left: 3px solid var(--accent-blue);
-      font-size: 12px;
-    }
+    /* ── Responsive ─────────────────────────── */
+    .two-col { display: grid; grid-template-columns: 1fr 380px; gap: 16px; }
+    @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
   </style>
 </head>
 
 <body>
-  <!-- ═══════════════════════════════════════════════════════════
-       HEADER
-  ═══════════════════════════════════════════════════════════ -->
-  <header style="background: linear-gradient(135deg, #060c1a, #0d1f3c); border-bottom: 1px solid #1e3a5f; padding: 16px 24px;">
-    <div style="max-width: 1400px; margin: 0 auto; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-      <div style="font-size: 2rem;">🎣</div>
-      <div>
-        <h1 style="font-size: 1.3rem; font-weight: 900; color: var(--accent-cyan); letter-spacing: 1px;">
-          محرك قرار الصيد بالسيرف — تونس
-        </h1>
-        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">
-          Moteur de Décision Surfcasting Tunisie | Hydrodynamique Marine + IA Scientifique
-        </p>
-      </div>
-      <div style="margin-right: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-        <span id="system-status" style="font-size: 11px; color: #10b981; background: #064e3b; padding: 3px 10px; border-radius: 12px; border: 1px solid #10b981;">
-          ● SYSTÈME EN LIGNE
-        </span>
-        <span id="clock-display" style="font-size: 11px; color: var(--text-secondary); font-family: monospace;"></span>
-      </div>
+<!-- ═══════════════════════════════════════════
+     HEADER
+═══════════════════════════════════════════ -->
+<header style="background:linear-gradient(135deg,#060c1a,#0d1f3c);border-bottom:1px solid #1e3a5f;padding:14px 20px;">
+  <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+    <span style="font-size:2rem;">🎣</span>
+    <div>
+      <h1 style="font-size:1.25rem;font-weight:900;color:var(--accent-cyan);letter-spacing:1px;">
+        محرك قرار الصيد بالسيرف — تونس
+      </h1>
+      <p style="font-size:11px;color:var(--text-secondary);margin-top:2px;">
+        Moteur de Décision Surfcasting Tunisie | v3.0 — Corrections complètes appliquées
+      </p>
     </div>
-  </header>
+    <div style="margin-right:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <span id="system-status" style="font-size:11px;color:#10b981;background:#064e3b;padding:3px 10px;border-radius:12px;border:1px solid #10b981;">
+        ● جاري الاتصال...
+      </span>
+      <span id="clock-display" style="font-size:11px;color:var(--text-secondary);font-family:monospace;"></span>
+    </div>
+  </div>
+</header>
 
-  <!-- ═══════════════════════════════════════════════════════════
-       MAIN LAYOUT
-  ═══════════════════════════════════════════════════════════ -->
-  <main style="max-width: 1400px; margin: 0 auto; padding: 20px 16px;">
+<!-- ═══════════════════════════════════════════
+     MAIN
+═══════════════════════════════════════════ -->
+<main style="max-width:1400px;margin:0 auto;padding:18px 16px;">
 
-    <!-- ── TOP ROW: Map + Controls ───────────────────────────── -->
-    <div class="desktop-grid" style="display: grid; grid-template-columns: 1fr 380px; gap: 16px; margin-bottom: 16px;">
+  <!-- TOP ROW -->
+  <div class="two-col" style="margin-bottom:16px;">
 
-      <!-- Map Panel -->
+    <!-- Carte -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <h2 style="font-size:1rem;font-weight:700;color:var(--accent-cyan);">🗺️ خريطة المواقع | Carte des Spots</h2>
+        <div id="coords-display">LAT: ---.------  |  LON: ---.------</div>
+      </div>
+      <div id="map-container">
+        <div id="map"></div>
+        <div id="visor">
+          <div id="visor-dot"></div>
+          <div class="visor-corner tl"></div>
+          <div class="visor-corner tr"></div>
+          <div class="visor-corner bl"></div>
+          <div class="visor-corner br"></div>
+        </div>
+      </div>
+      <button id="analyze-btn" onclick="analyzeCurrentCenter()"
+        style="width:100%;margin-top:12px;padding:14px;background:linear-gradient(135deg,#1d4ed8,#0284c7);border:none;border-radius:8px;color:white;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <span>⚡</span><span>تحليل هذا الموقع | Analyser ce Spot</span>
+      </button>
+    </div>
+
+    <!-- Controls -->
+    <div style="display:flex;flex-direction:column;gap:12px;">
+
+      <!-- Governorate Dropdown -->
       <div class="card">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-          <h2 style="font-size: 1rem; font-weight: 700; color: var(--accent-cyan);">
-            🗺️ خريطة المواقع | Carte des Spots
-          </h2>
-          <div id="coords-display">
-            LAT: ---.------  |  LON: ---.------
-          </div>
-        </div>
-
-        <div id="map-container">
-          <div id="map"></div>
-          <!-- Precision Visor -->
-          <div id="visor">
-            <div id="visor-dot"></div>
-            <div class="visor-corner tl"></div>
-            <div class="visor-corner tr"></div>
-            <div class="visor-corner bl"></div>
-            <div class="visor-corner br"></div>
-          </div>
-        </div>
-
-        <!-- Analyze Button -->
-        <button id="analyze-btn"
-          onclick="analyzeCurrentCenter()"
-          style="width: 100%; margin-top: 12px; padding: 14px; background: linear-gradient(135deg, #1d4ed8, #0284c7); border: none; border-radius: 8px; color: white; font-size: 1rem; font-weight: 700; cursor: pointer; letter-spacing: 1px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;">
-          <span>⚡</span>
-          <span>تحليل هذا الموقع | Analyser ce Spot</span>
+        <h3 style="font-size:0.9rem;font-weight:700;color:var(--accent-yellow);margin-bottom:10px;">
+          🏆 أفضل المواقع حسب الولاية
+        </h3>
+        <select id="gov-select"
+          style="width:100%;padding:10px;background:#070d1a;border:1px solid var(--border-color);color:var(--text-primary);border-radius:8px;font-size:13px;margin-bottom:10px;">
+          <option value="">-- اختر الولاية | Gouvernorat --</option>
+          <option value="Bizerte">بنزرت | Bizerte</option>
+          <option value="Nabeul">نابل | Nabeul (Cap Bon)</option>
+          <option value="Tunis_Ariana_BenArous">تونس / أريانة / بن عروس</option>
+          <option value="Sousse">سوسة | Sousse</option>
+          <option value="Monastir">المنستير | Monastir</option>
+          <option value="Mahdia">المهدية | Mahdia</option>
+          <option value="Sfax">صفاقس | Sfax</option>
+          <option value="Gabes">قابس | Gabès (Macrotidal)</option>
+          <option value="Medenine">مدنين | Médenine (Djerba/Zarzis)</option>
+        </select>
+        <button onclick="rankGovernorate()"
+          style="width:100%;padding:12px;background:linear-gradient(135deg,#92400e,#b45309);border:none;border-radius:8px;color:white;font-weight:700;cursor:pointer;font-size:13px;">
+          🏅 تصنيف أفضل 3 مواقع الآن
         </button>
       </div>
 
-      <!-- Controls Panel -->
-      <div style="display: flex; flex-direction: column; gap: 12px;">
+      <!-- Wind Panel -->
+      <div class="card" id="wind-panel" style="display:none;">
+        <h3 style="font-size:0.85rem;font-weight:700;color:#8b5cf6;margin-bottom:8px;">
+          💨 الريح | Vent
+        </h3>
+        <div id="wind-content"></div>
+      </div>
 
-        <!-- Governorate Dropdown -->
-        <div class="card">
-          <h3 style="font-size: 0.9rem; font-weight: 700; color: var(--accent-yellow); margin-bottom: 10px;">
-            🏆 أفضل المواقع حسب الولاية | Top Spots par Gouvernorat
-          </h3>
-          <select id="gov-select"
-            style="width: 100%; padding: 10px; background: #070d1a; border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 8px; font-size: 13px; margin-bottom: 10px;">
-            <option value="">-- اختر الولاية | Choisir le Gouvernorat --</option>
-            <option value="Bizerte">بنزرت | Bizerte</option>
-            <option value="Nabeul">نابل | Nabeul (Cap Bon)</option>
-            <option value="Tunis_Ariana_BenArous">تونس / أريانة / بن عروس</option>
-            <option value="Sousse">سوسة | Sousse</option>
-            <option value="Monastir">المنستير | Monastir</option>
-            <option value="Mahdia">المهدية | Mahdia</option>
-            <option value="Sfax">صفاقس | Sfax</option>
-            <option value="Gabes">قابس | Gabès (Macrotidal)</option>
-            <option value="Medenine">مدنين | Médenine (Djerba/Zarzis)</option>
-          </select>
-          <button onclick="rankGovernorate()"
-            style="width: 100%; padding: 12px; background: linear-gradient(135deg, #92400e, #b45309); border: none; border-radius: 8px; color: white; font-weight: 700; cursor: pointer; font-size: 13px; letter-spacing: 0.5px;">
-            🏅 تصنيف أفضل 3 مواقع الآن
-          </button>
+      <!-- Tidal Panel -->
+      <div class="card" id="tidal-panel" style="display:none;">
+        <h3 style="font-size:0.85rem;font-weight:700;color:#60a5fa;margin-bottom:8px;">
+          🌊 المد والجزر | Marées
+        </h3>
+        <div id="tidal-content"></div>
+      </div>
+
+      <!-- Quick Conditions -->
+      <div class="card" id="quick-conditions" style="display:none;">
+        <h3 style="font-size:0.85rem;font-weight:700;color:var(--accent-cyan);margin-bottom:8px;">
+          ⚡ الحالة الراهنة | Conditions Actuelles
+        </h3>
+        <div id="quick-cond-content"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- VERDICT BANNER -->
+  <div id="verdict-banner" class="verdict-pending" style="margin-bottom:16px;">
+    <div style="font-size:2rem;margin-bottom:6px;">⚓</div>
+    <div>انقل الخريطة واضغط تحليل | Déplacez la carte et cliquez Analyser</div>
+    <div style="font-size:13px;font-weight:400;margin-top:6px;opacity:0.7;">Système en attente de coordonnées...</div>
+  </div>
+
+  <!-- SCORE BAR -->
+  <div class="card" id="score-section" style="display:none;margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span style="font-size:13px;color:var(--text-secondary);">النتيجة العلمية | Score Scientifique</span>
+      <span id="score-value" style="font-size:1.5rem;font-weight:900;color:var(--accent-cyan);">--/100</span>
+    </div>
+    <div class="score-bar-track">
+      <div id="score-bar-fill" class="score-bar-fill" style="width:0%;"></div>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loading-overlay" style="display:none;text-align:center;padding:32px;">
+    <div class="spinner"></div>
+    <div id="loading-text" style="color:var(--accent-cyan);font-size:14px;margin-top:8px;">جاري التحليل...</div>
+    <div style="color:var(--text-secondary);font-size:11px;margin-top:4px;">Calcul des vecteurs marins en cours...</div>
+  </div>
+
+  <!-- RESULTS TABS -->
+  <div id="results-section" style="display:none;">
+
+    <!-- FIX #17: Tab buttons with data-tab attribute -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+      <button class="tab-btn active" data-tab="gauges"      onclick="switchTab('gauges')">📊 المؤشرات</button>
+      <button class="tab-btn"        data-tab="fish"        onclick="switchTab('fish')">🐟 الأسماك</button>
+      <button class="tab-btn"        data-tab="wind-detail" onclick="switchTab('wind-detail')">💨 الريح</button>
+      <button class="tab-btn"        data-tab="forecast"    onclick="switchTab('forecast')">📅 التوقعات</button>
+      <button class="tab-btn"        data-tab="report"      onclick="switchTab('report')">📋 التقرير</button>
+      <button class="tab-btn"        data-tab="leaderboard" onclick="switchTab('leaderboard')">🏆 الترتيب</button>
+    </div>
+
+    <!-- TAB: GAUGES -->
+    <div id="tab-gauges" class="tab-panel active">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:16px;margin-bottom:16px;">
+        <!-- Seaweed -->
+        <div class="gauge-wrapper card2">
+          <svg class="gauge-svg" width="80" height="80" viewBox="0 0 80 80">
+            <circle class="gauge-bg" cx="40" cy="40" r="30"/>
+            <circle id="g-seaweed" class="gauge-fill" cx="40" cy="40" r="30" stroke="#f59e0b" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+            <text class="gauge-text" x="40" y="40" transform="rotate(90,40,40)" id="g-seaweed-txt">0%</text>
+          </svg>
+          <div class="gauge-label">🪸 هاشيش<br/>Algues</div>
         </div>
-
-        <!-- Live Conditions Quick Panel -->
-        <div class="card" id="quick-conditions" style="display:none;">
-          <h3 style="font-size: 0.85rem; font-weight: 700; color: var(--accent-cyan); margin-bottom: 8px;">
-            ⚡ الحالة الراهنة | Conditions Actuelles
-          </h3>
-          <div id="quick-cond-content"></div>
+        <!-- Rip Safety -->
+        <div class="gauge-wrapper card2">
+          <svg class="gauge-svg" width="80" height="80" viewBox="0 0 80 80">
+            <circle class="gauge-bg" cx="40" cy="40" r="30"/>
+            <circle id="g-rip" class="gauge-fill" cx="40" cy="40" r="30" stroke="#10b981" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+            <text class="gauge-text" x="40" y="40" transform="rotate(90,40,40)" id="g-rip-txt">100%</text>
+          </svg>
+          <div class="gauge-label">🌀 سلامة<br/>Courants</div>
         </div>
-
-        <!-- Tidal State Panel -->
-        <div class="card" id="tidal-panel" style="display:none;">
-          <h3 style="font-size: 0.85rem; font-weight: 700; color: #60a5fa; margin-bottom: 8px;">
-            🌊 المد والجزر | Marées
-          </h3>
-          <div id="tidal-content"></div>
+        <!-- Wave -->
+        <div class="gauge-wrapper card2">
+          <svg class="gauge-svg" width="80" height="80" viewBox="0 0 80 80">
+            <circle class="gauge-bg" cx="40" cy="40" r="30"/>
+            <circle id="g-wave" class="gauge-fill" cx="40" cy="40" r="30" stroke="#3b82f6" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+            <text class="gauge-text" x="40" y="40" transform="rotate(90,40,40)" id="g-wave-txt">0m</text>
+          </svg>
+          <div class="gauge-label">🌊 موجة<br/>Vague adj</div>
         </div>
+        <!-- Wind km/h — FIX #12 max=74 km/h -->
+        <div class="gauge-wrapper card2">
+          <svg class="gauge-svg" width="80" height="80" viewBox="0 0 80 80">
+            <circle class="gauge-bg" cx="40" cy="40" r="30"/>
+            <circle id="g-wind" class="gauge-fill" cx="40" cy="40" r="30" stroke="#8b5cf6" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+            <text class="gauge-text" x="40" y="40" transform="rotate(90,40,40)" id="g-wind-txt">0</text>
+          </svg>
+          <!-- FIX #13: وحدة صحيحة km/h -->
+          <div class="gauge-label">💨 ريح<br/>km/h</div>
+        </div>
+        <!-- Score -->
+        <div class="gauge-wrapper card2">
+          <svg class="gauge-svg" width="80" height="80" viewBox="0 0 80 80">
+            <circle class="gauge-bg" cx="40" cy="40" r="30"/>
+            <circle id="g-score" class="gauge-fill" cx="40" cy="40" r="30" stroke="#06b6d4" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+            <text class="gauge-text" x="40" y="40" transform="rotate(90,40,40)" id="g-score-txt">0</text>
+          </svg>
+          <div class="gauge-label">⚡ نتيجة<br/>Score</div>
+        </div>
+        <!-- Tide -->
+        <div class="gauge-wrapper card2">
+          <svg class="gauge-svg" width="80" height="80" viewBox="0 0 80 80">
+            <circle class="gauge-bg" cx="40" cy="40" r="30"/>
+            <circle id="g-tide" class="gauge-fill" cx="40" cy="40" r="30" stroke="#38bdf8" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+            <text class="gauge-text" x="40" y="40" transform="rotate(90,40,40)" id="g-tide-txt">×1</text>
+          </svg>
+          <div class="gauge-label">🌊 مد<br/>Marée</div>
+        </div>
+      </div>
 
+      <!-- Vector Badges -->
+      <div class="card2" id="vector-row" style="display:none;margin-bottom:12px;">
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;font-weight:700;">
+          متجهات السطح الثلاثية | Vecteurs Hydrodynamiques
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;" id="vector-badges"></div>
+      </div>
+
+      <!-- Alerts -->
+      <div id="alerts-row"></div>
+    </div>
+
+    <!-- TAB: FISH -->
+    <div id="tab-fish" class="tab-panel">
+      <div class="card">
+        <h3 style="font-size:0.9rem;font-weight:700;color:var(--accent-cyan);margin-bottom:16px;">
+          🐟 مصفوفة نشاط الأسماك | Matrice d'Activité Piscicole
+        </h3>
+        <div id="fish-bars"></div>
+        <div id="sorra-alert-box" style="display:none;margin-top:12px;"></div>
       </div>
     </div>
 
-    <!-- ── VERDICT BANNER ────────────────────────────────────── -->
-    <div id="verdict-banner" class="verdict-pending" style="margin-bottom: 16px;">
-      <div style="font-size: 2rem; margin-bottom: 6px;">⚓</div>
-      <div>انقل الخريطة واضغط تحليل | Déplacez la carte et cliquez Analyser</div>
-      <div style="font-size: 14px; font-weight: 400; margin-top: 6px; opacity: 0.7;">
-        Système en attente de coordonnées...
-      </div>
-    </div>
-
-    <!-- ── SCORE BAR ─────────────────────────────────────────── -->
-    <div class="card" id="score-section" style="display:none; margin-bottom: 16px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <span style="font-size: 13px; color: var(--text-secondary);">النتيجة العلمية | Score Scientifique</span>
-        <span id="score-value" style="font-size: 1.5rem; font-weight: 900; color: var(--accent-cyan);">--/100</span>
-      </div>
-      <div class="score-bar-track">
-        <div id="score-bar-fill" class="score-bar-fill" style="width: 0%;"></div>
-      </div>
-    </div>
-
-    <!-- ── TAB NAVIGATION ────────────────────────────────────── -->
-    <div id="results-section" style="display:none;">
-      <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
-        <button class="tab-btn active" onclick="switchTab('gauges')">📊 المؤشرات | Gauges</button>
-        <button class="tab-btn" onclick="switchTab('fish')">🐟 الأسماك | Poissons</button>
-        <button class="tab-btn" onclick="switchTab('forecast')">📅 التوقعات | Prévisions</button>
-        <button class="tab-btn" onclick="switchTab('report')">📋 التقرير الكامل | Rapport</button>
-        <button class="tab-btn" onclick="switchTab('leaderboard')">🏆 الترتيب | Classement</button>
-      </div>
-
-      <!-- ── TAB: GAUGES ────────────────────────────────────── -->
-      <div id="tab-gauges" class="tab-panel active">
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 16px; margin-bottom: 16px;">
-          <!-- Seaweed Gauge -->
-          <div class="gauge-wrapper card2">
-            <svg class="gauge-svg" width="80" height="80" viewBox="0 0 80 80">
-              <circle class="gauge-bg" cx="40" cy="40" r="30"/>
-              <circle id="g-seaweed" class="gauge-fill" cx="40" cy="40" r="30"
-                stroke="#f59e0b" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
-              <text class="gauge-text" x="40" y="40" transform="rotate(90,40,40)" id="g-seaweed-txt">0%</text>
-            </svg>
-            <div class="gauge-label">🪸 الهاشيش<br/>Algues</div>
-          </div>
-
-          <!-- Rip Safety Gauge -->
-          <div class="gauge-wrapper card2">
-            <svg class="gauge-svg" width="80" height="80" viewBox="0 0 80 80">
-              <circle class="gauge-bg" cx="40" cy="40" r="30"/>
-              <circle id="g-rip" class="gauge-fill" cx="40" cy="40" r="30"
-                stroke="#10b981" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
-              <text class="gauge-text" x="40" y="40" transform="rotate(90,40,40)" id="g-rip-txt">100%</text>
-            </svg>
-            <div class="gauge-label">🌀 سلامة<br/>التيارات</div>
-          </div>
-
-          <!-- Wave Height Gauge -->
-          <div class="gauge-wrapper card2">
-            <svg class="gauge-svg" width="80" height="80" viewBox="0 0 80 80">
-              <circle class="gauge-bg" cx="40" cy="40" r="30"/>
-              <circle id="g-wave" class="gauge-fill" cx="40" cy="40" r="30"
-                stroke="#3b82f6" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
-              <text class="gauge-text" x="40" y="40" transform="rotate(90,40,40)" id="g-wave-txt">0m</text>
-            </svg>
-            <div class="gauge-label">🌊 الموجة<br/>Vague adj.</div>
-          </div>
-
-          <!-- Wind Speed Gauge -->
-          <div class="gauge-wrapper card2">
-            <svg class="gauge-svg" width="80" height="80" viewBox="0 0 80 80">
-              <circle class="gauge-bg" cx="40" cy="40" r="30"/>
-              <circle id="g-wind" class="gauge-fill" cx="40" cy="40" r="30"
-                stroke="#8b5cf6" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
-              <text class="gauge-text" x="40" y="40" transform="rotate(90,40,40)" id="g-wind-txt">0kn</text>
-            </svg>
-            <div class="gauge-label">💨 الريح<br/>Vent</div>
-          </div>
-
-          <!-- Score Gauge -->
-          <div class="gauge-wrapper card2">
-            <svg class="gauge-svg" width="80" height="80" viewBox="0 0 80 80">
-              <circle class="gauge-bg" cx="40" cy="40" r="30"/>
-              <circle id="g-score" class="gauge-fill" cx="40" cy="40" r="30"
-                stroke="#06b6d4" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
-              <text class="gauge-text" x="40" y="40" transform="rotate(90,40,40)" id="g-score-txt">0</text>
-            </svg>
-            <div class="gauge-label">⚡ النتيجة<br/>Score</div>
-          </div>
-
-          <!-- Tidal Boost Gauge -->
-          <div class="gauge-wrapper card2">
-            <svg class="gauge-svg" width="80" height="80" viewBox="0 0 80 80">
-              <circle class="gauge-bg" cx="40" cy="40" r="30"/>
-              <circle id="g-tide" class="gauge-fill" cx="40" cy="40" r="30"
-                stroke="#38bdf8" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
-              <text class="gauge-text" x="40" y="40" transform="rotate(90,40,40)" id="g-tide-txt">×1</text>
-            </svg>
-            <div class="gauge-label">🌊 المد<br/>Marée</div>
-          </div>
-        </div>
-
-        <!-- Vector Analysis Row -->
-        <div class="card2" id="vector-row" style="display:none;">
-          <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; font-weight: 700;">
-            متجهات السطح الثلاثية | Vecteurs Surface Tri-Dimensionnels
-          </div>
-          <div style="display: flex; flex-wrap: wrap; gap: 12px;" id="vector-badges"></div>
-        </div>
-
-        <!-- Alerts Row -->
-        <div id="alerts-row" style="margin-top: 12px;"></div>
-      </div>
-
-      <!-- ── TAB: FISH ACTIVITY ─────────────────────────────── -->
-      <div id="tab-fish" class="tab-panel">
-        <div class="card">
-          <h3 style="font-size: 0.9rem; font-weight: 700; color: var(--accent-cyan); margin-bottom: 16px;">
-            🐟 مصفوفة نشاط الأسماك | Matrice d'Activité Piscicole
-          </h3>
-          <div id="fish-bars"></div>
-          <div id="sorra-alert-box" style="display:none; margin-top: 12px;"></div>
-        </div>
-      </div>
-
-      <!-- ── TAB: FORECAST ──────────────────────────────────── -->
-      <div id="tab-forecast" class="tab-panel">
-        <div class="card">
-          <h3 style="font-size: 0.9rem; font-weight: 700; color: var(--accent-yellow); margin-bottom: 12px;">
-            📅 أفضل 3 نوافذ زمنية للصيد (7 أيام) | Meilleures Fenêtres de Pêche (7 jours)
-          </h3>
-          <div id="forecast-list"></div>
-        </div>
-      </div>
-
-      <!-- ── TAB: REPORT ────────────────────────────────────── -->
-      <div id="tab-report" class="tab-panel">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <h3 style="font-size: 0.9rem; font-weight: 700; color: var(--accent-cyan);">
-            📋 التقرير العلمي الكامل | Rapport Scientifique Complet
-          </h3>
-          <button onclick="copyReport()"
-            style="padding: 6px 14px; background: #1e3a5f; border: 1px solid var(--accent-blue); color: var(--accent-blue); border-radius: 6px; font-size: 11px; cursor: pointer;">
-            📋 نسخ | Copier
-          </button>
-        </div>
-        <div id="report-box">التقرير سيظهر هنا بعد التحليل...<br/>Le rapport apparaîtra ici après l'analyse...</div>
-      </div>
-
-      <!-- ── TAB: LEADERBOARD ───────────────────────────────── -->
-      <div id="tab-leaderboard" class="tab-panel">
-        <div id="leaderboard-container">
-          <div style="text-align: center; color: var(--text-secondary); padding: 32px; font-size: 13px;">
-            اختر ولاية من القائمة أعلاه للحصول على ترتيب أفضل المواقع...<br/>
-            Sélectionnez un gouvernorat pour obtenir le classement des meilleurs spots...
+    <!-- TAB: WIND DETAIL (جديد) -->
+    <div id="tab-wind-detail" class="tab-panel">
+      <div class="card">
+        <h3 style="font-size:0.9rem;font-weight:700;color:#8b5cf6;margin-bottom:16px;">
+          💨 تحليل الريح التفصيلي | Analyse Détaillée du Vent
+        </h3>
+        <div id="wind-detail-content">
+          <div style="color:var(--text-secondary);text-align:center;padding:24px;">
+            قم بتحليل موقع أولاً لرؤية تفاصيل الريح
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ── LOADING OVERLAY ───────────────────────────────────── -->
-    <div id="loading-overlay" style="display:none; text-align: center; padding: 32px;">
-      <div class="spinner"></div>
-      <div id="loading-text" style="color: var(--accent-cyan); font-size: 14px; margin-top: 8px;">
-        جاري تحليل البيانات الهيدروديناميكية...
-      </div>
-      <div style="color: var(--text-secondary); font-size: 11px; margin-top: 4px;">
-        Calcul des vecteurs marins en cours...
+    <!-- TAB: FORECAST -->
+    <div id="tab-forecast" class="tab-panel">
+      <div class="card">
+        <h3 style="font-size:0.9rem;font-weight:700;color:var(--accent-yellow);margin-bottom:12px;">
+          📅 أفضل 3 نوافذ صيد (7 أيام) | Meilleures Fenêtres de Pêche
+        </h3>
+        <div id="forecast-list"></div>
       </div>
     </div>
 
-  </main>
+    <!-- TAB: REPORT -->
+    <div id="tab-report" class="tab-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h3 style="font-size:0.9rem;font-weight:700;color:var(--accent-cyan);">📋 التقرير العلمي الكامل</h3>
+        <button onclick="copyReport()"
+          style="padding:6px 14px;background:#1e3a5f;border:1px solid var(--accent-blue);color:var(--accent-blue);border-radius:6px;font-size:11px;cursor:pointer;">
+          📋 نسخ | Copier
+        </button>
+      </div>
+      <div id="report-box">التقرير سيظهر هنا بعد التحليل...<br/>Le rapport apparaîtra ici après l'analyse...</div>
+    </div>
 
-  <!-- ═══════════════════════════════════════════════════════════
-       JAVASCRIPT ENGINE
-  ═══════════════════════════════════════════════════════════ -->
-  <script>
-    // ══════════════════════════════════════════════════════════
-    // CONFIGURATION
-    // ══════════════════════════════════════════════════════════
-    const API_BASE = "https://fishingbackend-xhom.onrender.com"; // ← UPDATE with your Render URL
-    
-    let currentResult = null;
-    let map = null;
-    let currentLat = 36.80, currentLon = 10.18; // Default: Gulf of Tunis
-
-    // ══════════════════════════════════════════════════════════
-    // LEAFLET MAP INITIALIZATION
-    // ══════════════════════════════════════════════════════════
-    function initMap() {
-      map = L.map('map', {
-        center: [currentLat, currentLon],
-        zoom: 8,
-        zoomControl: true,
-      });
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 19
-      }).addTo(map);
-
-      // Extract center on every map move (moveend event)
-      map.on('moveend', () => {
-        const center = map.getCenter();
-        currentLat = parseFloat(center.lat.toFixed(6));
-        currentLon = parseFloat(center.lng.toFixed(6));
-        updateCoordsDisplay(currentLat, currentLon);
-      });
-
-      // Also update on zoom
-      map.on('zoomend', () => {
-        const center = map.getCenter();
-        currentLat = parseFloat(center.lat.toFixed(6));
-        currentLon = parseFloat(center.lng.toFixed(6));
-        updateCoordsDisplay(currentLat, currentLon);
-      });
-
-      // Plot all known beach nodes as clickable markers
-      plotBeachMarkers();
-      updateCoordsDisplay(currentLat, currentLon);
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // BEACH MARKER DATA (mirrors backend BEACH_DB for visualization)
-    // ══════════════════════════════════════════════════════════
-    const BEACH_MARKERS = [
-      // Bizerte
-      { name: "Cap Blanc", lat: 37.345, lon: 9.803, gov: "Bizerte" },
-      { name: "Ghar El Melh", lat: 37.193, lon: 10.177, gov: "Bizerte" },
-      { name: "Raf Raf", lat: 37.175, lon: 10.185, gov: "Bizerte" },
-      { name: "Sidi Ali El Mekki", lat: 37.153, lon: 10.097, gov: "Bizerte" },
-      // Nabeul
-      { name: "Kelibia — Mansourah", lat: 36.876, lon: 11.118, gov: "Nabeul" },
-      { name: "Kelibia — Petit Paris", lat: 36.896, lon: 11.112, gov: "Nabeul" },
-      { name: "Retiba", lat: 36.745, lon: 11.045, gov: "Nabeul" },
-      { name: "Kerkouane", lat: 36.960, lon: 11.073, gov: "Nabeul" },
-      { name: "Sidi Mahrsi", lat: 36.820, lon: 11.090, gov: "Nabeul" },
-      { name: "Hammamet Nord", lat: 36.430, lon: 10.630, gov: "Nabeul" },
-      { name: "Hammamet Sud", lat: 36.370, lon: 10.600, gov: "Nabeul" },
-      { name: "Nabeul Plage", lat: 36.456, lon: 10.735, gov: "Nabeul" },
-      // Tunis area
-      { name: "La Marsa", lat: 36.878, lon: 10.326, gov: "Tunis" },
-      { name: "Gammarth", lat: 36.912, lon: 10.278, gov: "Tunis" },
-      { name: "Raoued", lat: 36.892, lon: 10.215, gov: "Tunis" },
-      // Sousse
-      { name: "Sousse Nord", lat: 35.860, lon: 10.640, gov: "Sousse" },
-      { name: "Port El Kantaoui", lat: 35.896, lon: 10.592, gov: "Sousse" },
-      // Monastir
-      { name: "Monastir Corniche", lat: 35.764, lon: 10.826, gov: "Monastir" },
-      // Mahdia
-      { name: "Mahdia Cap", lat: 35.500, lon: 11.065, gov: "Mahdia" },
-      // Sfax
-      { name: "Sfax Sidi Mansour", lat: 34.800, lon: 10.830, gov: "Sfax" },
-      // Gabes
-      { name: "Gabes Plage", lat: 33.887, lon: 10.097, gov: "Gabes" },
-      // Djerba / Zarzis
-      { name: "Zarzis Plage", lat: 33.510, lon: 11.110, gov: "Medenine" },
-      { name: "Djerba Seguia", lat: 33.780, lon: 10.990, gov: "Medenine" },
-    ];
-
-    function plotBeachMarkers() {
-      const govColors = {
-        Bizerte: '#3b82f6', Nabeul: '#10b981', Tunis: '#8b5cf6',
-        Sousse: '#f59e0b', Monastir: '#06b6d4', Mahdia: '#ec4899',
-        Sfax: '#f97316', Gabes: '#ef4444', Medenine: '#a78bfa'
-      };
-
-      BEACH_MARKERS.forEach(b => {
-        const color = govColors[b.gov] || '#94a3b8';
-        const icon = L.divIcon({
-          className: '',
-          html: `<div style="width:10px;height:10px;background:${color};border-radius:50%;border:2px solid white;box-shadow:0 0 6px ${color};cursor:pointer;"></div>`,
-          iconSize: [10, 10],
-          iconAnchor: [5, 5]
-        });
-
-        const marker = L.marker([b.lat, b.lon], { icon }).addTo(map);
-        marker.bindPopup(`
-          <div style="background:#111827;color:#e2e8f0;padding:10px;border-radius:8px;font-size:12px;min-width:160px;">
-            <b style="color:${color}">📍 ${b.name}</b><br/>
-            <span style="color:#94a3b8;">${b.gov}</span><br/>
-            <span>LAT: ${b.lat} | LON: ${b.lon}</span><br/>
-            <button onclick="analyzeFromMarker(${b.lat}, ${b.lon})"
-              style="margin-top:6px;width:100%;padding:6px;background:#1d4ed8;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;">
-              ⚡ تحليل | Analyser
-            </button>
-          </div>
-        `, { className: 'dark-popup' });
-      });
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // COORDINATE DISPLAY
-    // ══════════════════════════════════════════════════════════
-    function updateCoordsDisplay(lat, lon) {
-      const el = document.getElementById('coords-display');
-      if (el) {
-        el.textContent = `LAT: ${lat.toFixed(6)}  |  LON: ${lon.toFixed(6)}`;
-      }
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // ANALYZE FROM MARKER POPUP
-    // ══════════════════════════════════════════════════════════
-    function analyzeFromMarker(lat, lon) {
-      map.panTo([lat, lon]);
-      currentLat = lat;
-      currentLon = lon;
-      updateCoordsDisplay(lat, lon);
-      analyzeCurrentCenter();
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // MAIN ANALYZE FUNCTION
-    // ══════════════════════════════════════════════════════════
-    async function analyzeCurrentCenter() {
-      const lat = currentLat;
-      const lon = currentLon;
-
-      // Show loading
-      setLoading(true, "جاري تحليل البيانات الهيدروديناميكية للإحداثيات المحددة...");
-
-      try {
-        const response = await fetch(`${API_BASE}/analyze`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lat, lon })
-        });
-
-        if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.detail || `HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
-        currentResult = data;
-        renderResults(data);
-
-      } catch (error) {
-        setLoading(false);
-        showError(`خطأ في الاتصال بالخادم | Erreur serveur: ${error.message}`);
-      }
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // RENDER ALL RESULTS
-    // ══════════════════════════════════════════════════════════
-    function renderResults(data) {
-      setLoading(false);
-      
-      // ── Verdict Banner
-      const vb = document.getElementById('verdict-banner');
-      if (data.verdict === 'SPOT_APPROVED') {
-        vb.className = 'verdict-approved';
-      } else {
-        vb.className = 'verdict-change';
-      }
-      vb.innerHTML = `
-        <div style="font-size: 1rem; opacity: 0.8; margin-bottom: 4px;">📍 ${data.beach_name}</div>
-        <div style="font-size: 1.8rem;">${data.verdict_ar}</div>
-        <div style="font-size: 1rem; margin-top: 4px;">${data.verdict_fr}</div>
-        <div style="font-size: 13px; opacity: 0.7; margin-top: 6px;">
-          ${data.nearest_node_distance_km ? `النقطة الأقرب: ${data.nearest_node_distance_km} km | Nœud le plus proche: ${data.nearest_node_distance_km} km` : ''}
+    <!-- TAB: LEADERBOARD -->
+    <div id="tab-leaderboard" class="tab-panel">
+      <div id="leaderboard-container">
+        <div style="text-align:center;color:var(--text-secondary);padding:32px;font-size:13px;">
+          اختر ولاية من القائمة أعلاه للحصول على ترتيب أفضل المواقع...<br/>
+          Sélectionnez un gouvernorat pour obtenir le classement...
         </div>
-      `;
+      </div>
+    </div>
 
-      // ── Score Bar
-      const ss = document.getElementById('score-section');
-      ss.style.display = 'block';
-      document.getElementById('score-value').textContent = `${data.score}/100`;
-      const fill = document.getElementById('score-bar-fill');
-      const color = data.score >= 70 ? '#10b981' : data.score >= 45 ? '#f59e0b' : '#ef4444';
-      fill.style.background = color;
-      setTimeout(() => { fill.style.width = `${data.score}%`; }, 100);
+  </div><!-- /results-section -->
+</main>
 
-      // ── Show results sections
-      document.getElementById('results-section').style.display = 'block';
+<!-- ═══════════════════════════════════════════
+     JAVASCRIPT — COMPLETE & CORRECTED
+═══════════════════════════════════════════ -->
+<script>
+// ══════════════════════════════════════════════
+// CONFIG — FIX #11: URL clairement marquée
+// ══════════════════════════════════════════════
+// ⚠️  IMPORTANT: Remplacez cette URL par votre vraie URL Render.com après déploiement
+// ⚠️  مهم: ضع هنا عنوان Render.com الحقيقي بعد النشر
+const API_BASE = "https://fishingbackend-xhom.onrender.com"; // ← CHANGER ICI | غير هنا
 
-      // ── Gauges
-      renderGauges(data);
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let currentResult = null;
+let map = null;
+let analysisMarker = null;
+let currentLat = 36.80, currentLon = 10.18;
 
-      // ── Vectors
-      renderVectors(data);
+// ══════════════════════════════════════════════
+// MAP INITIALIZATION
+// ══════════════════════════════════════════════
+function initMap() {
+  map = L.map('map', { center: [currentLat, currentLon], zoom: 8, zoomControl: true });
 
-      // ── Alerts
-      renderAlerts(data);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 19
+  }).addTo(map);
 
-      // ── Fish Matrix
-      renderFishMatrix(data.fish_activity);
+  // Mise à jour coordonnées au moveend
+  map.on('moveend', updateMapCenter);
+  map.on('zoomend',  updateMapCenter);
 
-      // ── Forecast
-      renderForecast(data.forecast_top3);
+  plotBeachMarkers();
+  updateCoordsDisplay(currentLat, currentLon);
+}
 
-      // ── Report
-      document.getElementById('report-box').textContent = data.report;
+function updateMapCenter() {
+  const c = map.getCenter();
+  currentLat = parseFloat(c.lat.toFixed(6));
+  currentLon = parseFloat(c.lng.toFixed(6));
+  updateCoordsDisplay(currentLat, currentLon);
+}
 
-      // ── Quick Conditions
-      renderQuickConditions(data);
+// ══════════════════════════════════════════════
+// BEACH MARKERS
+// ══════════════════════════════════════════════
+const BEACH_MARKERS = [
+  { name:"Cap Blanc", lat:37.345, lon:9.803, gov:"Bizerte" },
+  { name:"Ghar El Melh", lat:37.193, lon:10.177, gov:"Bizerte" },
+  { name:"Raf Raf", lat:37.175, lon:10.185, gov:"Bizerte" },
+  { name:"Sidi Ali El Mekki", lat:37.153, lon:10.097, gov:"Bizerte" },
+  { name:"Kelibia Mansourah", lat:36.876, lon:11.118, gov:"Nabeul" },
+  { name:"Kelibia Petit Paris", lat:36.896, lon:11.112, gov:"Nabeul" },
+  { name:"Retiba", lat:36.745, lon:11.045, gov:"Nabeul" },
+  { name:"Kerkouane", lat:36.960, lon:11.073, gov:"Nabeul" },
+  { name:"Sidi Mahrsi", lat:36.820, lon:11.090, gov:"Nabeul" },
+  { name:"Hammamet Nord", lat:36.430, lon:10.630, gov:"Nabeul" },
+  { name:"Hammamet Sud", lat:36.370, lon:10.600, gov:"Nabeul" },
+  { name:"Nabeul Plage", lat:36.456, lon:10.735, gov:"Nabeul" },
+  { name:"La Marsa", lat:36.878, lon:10.326, gov:"Tunis" },
+  { name:"Gammarth", lat:36.912, lon:10.278, gov:"Tunis" },
+  { name:"Raoued", lat:36.892, lon:10.215, gov:"Tunis" },
+  { name:"Sousse Nord", lat:35.860, lon:10.640, gov:"Sousse" },
+  { name:"Port El Kantaoui", lat:35.896, lon:10.592, gov:"Sousse" },
+  { name:"Monastir Corniche", lat:35.764, lon:10.826, gov:"Monastir" },
+  { name:"Mahdia Cap", lat:35.500, lon:11.065, gov:"Mahdia" },
+  { name:"Sfax Sidi Mansour", lat:34.800, lon:10.830, gov:"Sfax" },
+  { name:"Gabes Plage", lat:33.887, lon:10.097, gov:"Gabes" },
+  { name:"Zarzis Plage", lat:33.510, lon:11.110, gov:"Medenine" },
+  { name:"Djerba Seguia", lat:33.780, lon:10.990, gov:"Medenine" },
+];
 
-      // ── Tidal Panel
-      renderTidalPanel(data.tidal);
+const GOV_COLORS = {
+  Bizerte:"#3b82f6", Nabeul:"#10b981", Tunis:"#8b5cf6",
+  Sousse:"#f59e0b", Monastir:"#06b6d4", Mahdia:"#ec4899",
+  Sfax:"#f97316", Gabes:"#ef4444", Medenine:"#a78bfa"
+};
 
-      // Auto-switch to gauges tab
-      switchTab('gauges');
+function plotBeachMarkers() {
+  BEACH_MARKERS.forEach(b => {
+    const color = GOV_COLORS[b.gov] || '#94a3b8';
+    // FIX #18: marker sans filtre — couleurs correctes sur fond sombre
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="width:12px;height:12px;background:${color};border-radius:50%;border:2px solid rgba(255,255,255,0.9);box-shadow:0 0 8px ${color};cursor:pointer;"></div>`,
+      iconSize: [12, 12], iconAnchor: [6, 6]
+    });
+    const marker = L.marker([b.lat, b.lon], { icon }).addTo(map);
+    marker.bindPopup(`
+      <div style="background:#111827;color:#e2e8f0;padding:10px;border-radius:8px;font-size:12px;min-width:160px;border:1px solid #1e3a5f;">
+        <b style="color:${color}">📍 ${b.name}</b><br/>
+        <span style="color:#94a3b8;">${b.gov}</span><br/>
+        <code style="font-size:10px;">${b.lat}, ${b.lon}</code><br/>
+        <button onclick="analyzeFromMarker(${b.lat},${b.lon})"
+          style="margin-top:8px;width:100%;padding:6px;background:linear-gradient(135deg,#1d4ed8,#0284c7);color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700;">
+          ⚡ تحليل | Analyser
+        </button>
+      </div>
+    `);
+  });
+}
 
-      // Add analysis marker to map
-      addAnalysisMarker(data);
+// ══════════════════════════════════════════════
+// COORDS DISPLAY
+// ══════════════════════════════════════════════
+function updateCoordsDisplay(lat, lon) {
+  const el = document.getElementById('coords-display');
+  if (el) el.textContent = `LAT: ${lat.toFixed(6)}  |  LON: ${lon.toFixed(6)}`;
+}
+
+// ══════════════════════════════════════════════
+// ANALYZE FROM MARKER
+// FIX #16: panTo + await avant analyzeCurrentCenter
+// ══════════════════════════════════════════════
+function analyzeFromMarker(lat, lon) {
+  currentLat = lat;
+  currentLon = lon;
+  map.panTo([lat, lon]);
+  updateCoordsDisplay(lat, lon);
+  // FIX #16: Petit délai pour laisser panTo se terminer
+  setTimeout(() => analyzeCurrentCenter(), 300);
+}
+
+// ══════════════════════════════════════════════
+// MAIN ANALYZE
+// ══════════════════════════════════════════════
+async function analyzeCurrentCenter() {
+  setLoading(true, "جاري جلب البيانات الهيدروديناميكية... | Récupération des données marines...");
+  try {
+    const resp = await fetch(`${API_BASE}/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat: currentLat, lon: currentLon })
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ detail: `HTTP ${resp.status}` }));
+      throw new Error(err.detail || `HTTP ${resp.status}`);
     }
+    const data = await resp.json();
+    currentResult = data;
+    renderResults(data);
+  } catch (e) {
+    setLoading(false);
+    showError(e.message);
+  }
+}
 
-    // ══════════════════════════════════════════════════════════
-    // RENDER GAUGES
-    // ══════════════════════════════════════════════════════════
-    const CIRC = 188.5; // 2π × 30
+// ══════════════════════════════════════════════
+// RENDER ALL RESULTS
+// ══════════════════════════════════════════════
+function renderResults(data) {
+  setLoading(false);
 
-    function setGauge(id, txtId, pct, text) {
-      const circle = document.getElementById(id);
-      const label = document.getElementById(txtId);
-      if (!circle || !label) return;
-      const offset = CIRC - (CIRC * Math.min(1, Math.max(0, pct / 100)));
-      circle.style.strokeDashoffset = offset;
-      label.textContent = text;
-    }
+  // Verdict Banner
+  const vb = document.getElementById('verdict-banner');
+  vb.className = data.verdict === 'SPOT_APPROVED' ? 'verdict-approved' : 'verdict-change';
+  vb.innerHTML = `
+    <div style="font-size:1rem;opacity:0.8;margin-bottom:4px;">📍 ${data.beach_name} — ${data.governorate || ''}</div>
+    <div style="font-size:2rem;">${data.verdict_ar}</div>
+    <div style="font-size:1rem;margin-top:4px;">${data.verdict_fr}</div>
+    ${data.nearest_node_distance_km != null
+      ? `<div style="font-size:12px;opacity:0.65;margin-top:6px;">أقرب نقطة: ${data.nearest_node_distance_km} km | Nœud: ${data.nearest_node_distance_km} km</div>`
+      : ''}
+  `;
 
-    function renderGauges(data) {
-      const cc = data.current_conditions;
-      const sw = data.seaweed;
-      const tide = data.tidal;
+  // Score Bar
+  document.getElementById('score-section').style.display = 'block';
+  document.getElementById('score-value').textContent = `${data.score}/100`;
+  const fill = document.getElementById('score-bar-fill');
+  const sc = data.score;
+  fill.style.background = sc >= 70 ? '#10b981' : sc >= 45 ? '#f59e0b' : '#ef4444';
+  setTimeout(() => { fill.style.width = `${sc}%`; }, 100);
 
-      // Seaweed (higher = worse, shown as warning level)
-      setGauge('g-seaweed', 'g-seaweed-txt', sw.seaweed_pct, `${sw.seaweed_pct}%`);
-      document.getElementById('g-seaweed').style.stroke =
-        sw.seaweed_pct > 60 ? '#ef4444' : sw.seaweed_pct > 30 ? '#f59e0b' : '#10b981';
+  document.getElementById('results-section').style.display = 'block';
 
-      // Rip Safety
-      setGauge('g-rip', 'g-rip-txt', sw.rip_safety_pct, `${sw.rip_safety_pct}%`);
-      document.getElementById('g-rip').style.stroke =
-        sw.rip_safety_pct < 40 ? '#ef4444' : sw.rip_safety_pct < 65 ? '#f59e0b' : '#10b981';
+  renderGauges(data);
+  renderVectors(data);
+  renderAlerts(data);
+  renderFishMatrix(data.fish_activity);
+  renderWindDetail(data);     // nouveau
+  renderForecast(data.forecast_top3);
+  document.getElementById('report-box').textContent = data.report;
+  renderQuickConditions(data);
+  renderTidalPanel(data.tidal);
+  renderWindPanel(data);      // sidebar
+  addAnalysisMarker(data);
 
-      // Wave height (max 4m for gauge scaling)
-      const wPct = Math.min(100, (cc.wave_height_adjusted / 4.0) * 100);
-      setGauge('g-wave', 'g-wave-txt', wPct, `${cc.wave_height_adjusted.toFixed(2)}m`);
-      document.getElementById('g-wave').style.stroke =
-        cc.wave_height_adjusted > 2.0 ? '#ef4444' : cc.wave_height_adjusted > 1.2 ? '#f59e0b' : '#3b82f6';
+  switchTab('gauges');
+}
 
-      // Wind speed (max 40kn)
-      const wsPct = Math.min(100, (cc.wind_speed / 40.0) * 100);
-      setGauge('g-wind', 'g-wind-txt', wsPct, `${cc.wind_speed.toFixed(1)}kn`);
-      document.getElementById('g-wind').style.stroke =
-        cc.wind_speed > 25 ? '#ef4444' : cc.wind_speed > 15 ? '#f59e0b' : '#8b5cf6';
+// ══════════════════════════════════════════════
+// GAUGES
+// FIX #12: max vent = 74 km/h
+// ══════════════════════════════════════════════
+const CIRC = 188.5;
 
-      // Score
-      setGauge('g-score', 'g-score-txt', data.score, `${data.score}`);
-      document.getElementById('g-score').style.stroke =
-        data.score >= 65 ? '#10b981' : data.score >= 45 ? '#f59e0b' : '#ef4444';
+function setGauge(id, txtId, pct, text) {
+  const c = document.getElementById(id);
+  const l = document.getElementById(txtId);
+  if (!c || !l) return;
+  c.style.strokeDashoffset = CIRC - (CIRC * Math.min(1, Math.max(0, pct / 100)));
+  l.textContent = text;
+}
 
-      // Tidal boost (1.0 = 50% of gauge)
-      const tidePct = ((tide.tidal_boost - 0.7) / 0.7) * 100;
-      setGauge('g-tide', 'g-tide-txt', Math.max(0, Math.min(100, tidePct)),
-        `×${tide.tidal_boost.toFixed(2)}`);
-      document.getElementById('g-tide').style.stroke =
-        tide.tidal_boost >= 1.2 ? '#10b981' : tide.tidal_boost >= 1.0 ? '#38bdf8' : '#64748b';
-    }
+function renderGauges(data) {
+  const cc = data.current_conditions;
+  const sw = data.seaweed;
+  const tide = data.tidal;
 
-    // ══════════════════════════════════════════════════════════
-    // RENDER VECTOR BADGES
-    // ══════════════════════════════════════════════════════════
-    function renderVectors(data) {
-      const cc = data.current_conditions;
-      const vr = document.getElementById('vector-row');
-      const vb = document.getElementById('vector-badges');
-      vr.style.display = 'block';
+  // Seaweed
+  setGauge('g-seaweed','g-seaweed-txt', sw.seaweed_pct, `${sw.seaweed_pct}%`);
+  document.getElementById('g-seaweed').style.stroke = sw.seaweed_pct > 60 ? '#ef4444' : sw.seaweed_pct > 30 ? '#f59e0b' : '#10b981';
 
-      function badgeClass(cls) {
-        if (cls === 'ONSHORE') return 'onshore';
-        if (cls === 'LONGSHORE') return 'longshore';
-        return 'offshore';
-      }
+  // Rip Safety
+  setGauge('g-rip','g-rip-txt', sw.rip_safety_pct, `${sw.rip_safety_pct}%`);
+  document.getElementById('g-rip').style.stroke = sw.rip_safety_pct < 40 ? '#ef4444' : sw.rip_safety_pct < 65 ? '#f59e0b' : '#10b981';
 
-      function badgeIcon(cls) {
-        if (cls === 'ONSHORE') return '↗️';
-        if (cls === 'LONGSHORE') return '↔️';
-        return '↘️';
-      }
+  // Wave (max 4m)
+  const wPct = Math.min(100, (cc.wave_height_adjusted / 4.0) * 100);
+  setGauge('g-wave','g-wave-txt', wPct, `${cc.wave_height_adjusted.toFixed(2)}m`);
+  document.getElementById('g-wave').style.stroke = cc.wave_height_adjusted > 2.0 ? '#ef4444' : cc.wave_height_adjusted > 1.2 ? '#f59e0b' : '#3b82f6';
 
-      const waveCls = cc.wave_classification;
-      const windCls = classify(cc.wind_delta_deg);
-      const swellCls = classify(cc.swell_delta_deg);
+  // FIX #12: Wind en km/h, max 74 km/h (= 40 noeuds)
+  const ws_kmh = cc.wind_speed_kmh || 0;
+  const wPctKmh = Math.min(100, (ws_kmh / 74.0) * 100);
+  setGauge('g-wind','g-wind-txt', wPctKmh, `${ws_kmh.toFixed(0)}`);
+  document.getElementById('g-wind').style.stroke = ws_kmh > 46 ? '#ef4444' : ws_kmh > 28 ? '#f59e0b' : '#8b5cf6';
 
-      vb.innerHTML = `
-        <div>
-          <div style="font-size:10px;color:#64748b;margin-bottom:3px;">الموجة | Vague</div>
-          <span class="vector-badge ${badgeClass(waveCls)}">
-            ${badgeIcon(waveCls)} ${waveCls} (Δ=${cc.wave_delta_deg}°)
+  // Score
+  setGauge('g-score','g-score-txt', data.score, `${data.score}`);
+  document.getElementById('g-score').style.stroke = data.score >= 65 ? '#10b981' : data.score >= 45 ? '#f59e0b' : '#ef4444';
+
+  // Tide boost
+  const tidePct = ((tide.tidal_boost - 0.7) / 0.65) * 100;
+  setGauge('g-tide','g-tide-txt', Math.max(0, Math.min(100, tidePct)), `×${tide.tidal_boost}`);
+  document.getElementById('g-tide').style.stroke = tide.tidal_boost >= 1.2 ? '#10b981' : tide.tidal_boost >= 1.0 ? '#38bdf8' : '#64748b';
+}
+
+// ══════════════════════════════════════════════
+// VECTORS
+// ══════════════════════════════════════════════
+function classifyDelta(delta) {
+  if (delta < 60) return 'ONSHORE';
+  if (delta <= 120) return 'LONGSHORE';
+  return 'OFFSHORE';
+}
+function badgeClass(cls) { return cls === 'ONSHORE' ? 'onshore' : cls === 'LONGSHORE' ? 'longshore' : 'offshore'; }
+function badgeIcon(cls)  { return cls === 'ONSHORE' ? '↗️ موجة شاطئية' : cls === 'LONGSHORE' ? '↔️ دريفت ساحلي' : '↙️ موجة بحرية'; }
+
+function renderVectors(data) {
+  const cc = data.current_conditions;
+  const vr = document.getElementById('vector-row');
+  const vb = document.getElementById('vector-badges');
+  vr.style.display = 'block';
+
+  const wCls  = cc.wave_classification;
+  const wdCls = classifyDelta(cc.wind_delta_deg);
+  const sCls  = classifyDelta(cc.swell_delta_deg);
+
+  vb.innerHTML = `
+    <div><div style="font-size:10px;color:#64748b;margin-bottom:3px;">الموجة | Vague</div>
+      <span class="vector-badge ${badgeClass(wCls)}">${badgeIcon(wCls)} (Δ=${cc.wave_delta_deg}°)</span></div>
+    <div><div style="font-size:10px;color:#64748b;margin-bottom:3px;">الريح | Vent</div>
+      <span class="vector-badge ${badgeClass(wdCls)}">${badgeIcon(wdCls)} (Δ=${cc.wind_delta_deg}°)</span></div>
+    <div><div style="font-size:10px;color:#64748b;margin-bottom:3px;">التضخم | Houle</div>
+      <span class="vector-badge ${badgeClass(sCls)}">${badgeIcon(sCls)} (Δ=${cc.swell_delta_deg}°)</span></div>
+    <div style="font-size:11px;color:var(--text-secondary);align-self:center;">
+      المعيار: ${data.shore_normal_deg}° | عامل الحماية: ×${data.shelter_factor}
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════
+// WIND DETAIL TAB (جديد — FIX كامل للريح)
+// ══════════════════════════════════════════════
+function renderWindDetail(data) {
+  const cc = data.current_conditions;
+  const ws_kmh = cc.wind_speed_kmh || 0;
+  const ws_kn  = cc.wind_speed_kn  || 0;
+  const ws_ms  = (ws_kmh / 3.6).toFixed(1);
+  const wdir   = cc.wind_direction || 0;
+  const wdelta = cc.wind_delta_deg || 90;
+  const wcls   = classifyDelta(wdelta);
+
+  // Beaufort scale
+  let beaufort = 0, beaufortDesc = "calme";
+  if (ws_kn > 1)  { beaufort = 1; beaufortDesc = "très légère brise"; }
+  if (ws_kn > 3)  { beaufort = 2; beaufortDesc = "légère brise"; }
+  if (ws_kn > 6)  { beaufort = 3; beaufortDesc = "petite brise"; }
+  if (ws_kn > 10) { beaufort = 4; beaufortDesc = "jolie brise"; }
+  if (ws_kn > 16) { beaufort = 5; beaufortDesc = "bonne brise"; }
+  if (ws_kn > 21) { beaufort = 6; beaufortDesc = "vent frais | ريح منعشة"; }
+  if (ws_kn > 27) { beaufort = 7; beaufortDesc = "grand frais | ريح قوية"; }
+  if (ws_kn > 33) { beaufort = 8; beaufortDesc = "coup de vent | ريح عاصفة ⚠️"; }
+  if (ws_kn > 40) { beaufort = 9; beaufortDesc = "fort coup de vent | عاصفة قوية 🔴"; }
+
+  // Direction compass
+  const compass = degreeToCompass(wdir);
+  const arrowRot = wdir; // ريح من الاتجاه = السهم يشير من هناك
+
+  // Impact fishing
+  const fishImpact = wcls === 'ONSHORE'
+    ? { icon: '✅', txt: 'الريح الشاطئية تفضل الصيد | Vent onshore favorable — active les poissons' }
+    : wcls === 'LONGSHORE'
+    ? { icon: '⚠️', txt: 'ريح طولية — تسبب انجراف الصنارة | Vent longshore — dérive des lignes' }
+    : { icon: '🔵', txt: 'ريح بحرية — تُصفي السطح | Vent offshore — clarifie l\'eau' };
+
+  const container = document.getElementById('wind-detail-content');
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+
+      <!-- Vitesse principale -->
+      <div class="card2" style="text-align:center;">
+        <div style="font-size:2.5rem;font-weight:900;color:#8b5cf6;">${ws_kmh.toFixed(1)}</div>
+        <div style="font-size:1rem;color:var(--text-secondary);">كم/س | km/h</div>
+        <div style="font-size:1.1rem;font-weight:700;color:#a78bfa;margin-top:4px;">${ws_kn.toFixed(1)} kn</div>
+        <div style="font-size:0.9rem;color:var(--text-secondary);">${ws_ms} m/s</div>
+      </div>
+
+      <!-- Direction + Boussole -->
+      <div class="card2" style="text-align:center;">
+        <div style="font-size:2rem;margin-bottom:4px;">
+          <span style="display:inline-block;transform:rotate(${arrowRot}deg);transition:transform 0.5s;">🧭</span>
+        </div>
+        <div style="font-size:1.4rem;font-weight:900;color:#06b6d4;">${wdir.toFixed(0)}°</div>
+        <div style="font-size:1.1rem;font-weight:700;color:#38bdf8;">${compass}</div>
+        <div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">من | De ${wdir.toFixed(0)}°</div>
+      </div>
+    </div>
+
+    <!-- Beaufort -->
+    <div class="card2" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:13px;color:var(--text-secondary);">سلم بوفور | Échelle Beaufort</span>
+        <span style="font-size:1.2rem;font-weight:900;color:#f59e0b;">Force ${beaufort}</span>
+      </div>
+      <div style="font-size:12px;color:#fde68a;margin-top:4px;">${beaufortDesc}</div>
+      <!-- Barre Beaufort -->
+      <div style="display:flex;gap:3px;margin-top:8px;">
+        ${Array.from({length:12},(_,i)=>`
+          <div style="flex:1;height:8px;border-radius:2px;background:${i < beaufort
+            ? (i < 4 ? '#10b981' : i < 7 ? '#f59e0b' : '#ef4444')
+            : '#1e2d45'};"></div>
+        `).join('')}
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-secondary);margin-top:2px;">
+        <span>0 — هادئ</span><span>6 — منعش</span><span>12 — إعصار</span>
+      </div>
+    </div>
+
+    <!-- Impact Vecteur -->
+    <div class="card2" style="margin-bottom:12px;">
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">تأثير الريح على الصيد | Impact sur la Pêche</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:1.5rem;">${fishImpact.icon}</span>
+        <span class="vector-badge ${badgeClass(wcls)}" style="font-size:12px;">${wcls} — Δ=${wdelta.toFixed(1)}°</span>
+      </div>
+      <div style="font-size:12px;color:var(--text-primary);margin-top:6px;line-height:1.5;">${fishImpact.txt}</div>
+    </div>
+
+    <!-- Seuils de sécurité -->
+    <div class="card2">
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">عتبات السلامة | Seuils de Sécurité</div>
+      ${[
+        { label: 'تراكم عشب | Seuil algues', val: 22.2, unit: 'km/h', ok: ws_kmh <= 22.2 },
+        { label: 'ريح قوية | Vent fort',       val: 46.3, unit: 'km/h', ok: ws_kmh <= 46.3 },
+        { label: 'خطر إطلاق | Danger lancer',  val: 55.0, unit: 'km/h', ok: ws_kmh <= 55.0 },
+      ].map(s => `
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1e2d45;font-size:11.5px;">
+          <span style="color:var(--text-secondary);">${s.label}</span>
+          <span>
+            <span style="color:var(--text-secondary);">< ${s.val} ${s.unit}</span>
+            <span style="margin-right:8px;font-size:13px;">${s.ok ? '✅' : '❌'}</span>
           </span>
         </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════
+// WIND SIDEBAR PANEL
+// ══════════════════════════════════════════════
+function renderWindPanel(data) {
+  const cc = data.current_conditions;
+  const ws_kmh = cc.wind_speed_kmh || 0;
+  const ws_kn  = cc.wind_speed_kn  || 0;
+  const wdir   = cc.wind_direction || 0;
+  const compass = degreeToCompass(wdir);
+
+  const panel = document.getElementById('wind-panel');
+  const content = document.getElementById('wind-content');
+  panel.style.display = 'block';
+
+  content.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div>
+        <span style="font-size:1.8rem;font-weight:900;color:#8b5cf6;">${ws_kmh.toFixed(1)}</span>
+        <span style="font-size:0.9rem;color:var(--text-secondary);margin-right:4px;">كم/س</span>
+        <span style="font-size:1.1rem;color:#a78bfa;font-weight:700;">${ws_kn.toFixed(1)} kn</span>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:1.5rem;transform:rotate(${wdir}deg);display:inline-block;">🧭</div>
+        <div style="font-size:12px;font-weight:700;color:#06b6d4;">${compass}</div>
+        <div style="font-size:10px;color:var(--text-secondary);">${wdir.toFixed(0)}°</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text-secondary);">
+      ${(ws_kmh / 3.6).toFixed(1)} m/s
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════
+// DEGREE → COMPASS DIRECTION
+// ══════════════════════════════════════════════
+function degreeToCompass(deg) {
+  const dirs = [
+    'N شمال','NNE','NE شمال-شرق','ENE',
+    'E شرق','ESE','SE جنوب-شرق','SSE',
+    'S جنوب','SSW','SW جنوب-غرب','WSW',
+    'W غرب','WNW','NW شمال-غرب','NNW'
+  ];
+  return dirs[Math.round(((deg % 360) / 22.5)) % 16];
+}
+
+// ══════════════════════════════════════════════
+// ALERTS
+// ══════════════════════════════════════════════
+function renderAlerts(data) {
+  const ar = document.getElementById('alerts-row');
+  ar.innerHTML = '';
+  const alerts = [];
+
+  if (data.seaweed.rip_critical)
+    alerts.push({ level:'critical', text:'⚠️ خطر تيارات قطع حرجة! خطر مميت حتى في مظهر الهدوء! | Courant de rip CRITIQUE — Danger mortel!' });
+  if (data.seaweed.floating_debris_warning)
+    alerts.push({ level:'warning', text:'🌿 حطام طافٍ وعشب متبقٍّ | Débris flottants résiduels — risque emmêlement lignes' });
+  if (data.fish_activity.sorra_line_cut_alert)
+    alerts.push({ level:'warning', text:'🦈 تحذير قرداح — خطر قطع الخيط! استخدم Tresse/Braid حتماً | ALERTE SORRA — coupe monofilament!' });
+  if (data.current_conditions.wave_classification === 'LONGSHORE')
+    alerts.push({ level:'warning', text:'↔️ دريفت ساحلي شديد — انجراف الصنارة مضمون | Dérive longshore sévère — changement spot recommandé' });
+  if (data.tidal.regime === 'macro' && data.tidal.state === 'LOW_TIDE')
+    alerts.push({ level:'info', text:`🌊 جزر منخفض (ماكروتيدال) — نشاط سمكي ضعيف | Basse mer macrotidale — activité réduite (${data.tidal.height_m}m)` });
+
+  const COLORS = {
+    critical:{ bg:'#450a0a', border:'#ef4444', text:'#fca5a5' },
+    warning: { bg:'#451a03', border:'#f59e0b', text:'#fde68a' },
+    info:    { bg:'#1e3a5f', border:'#3b82f6', text:'#93c5fd' }
+  };
+  alerts.forEach(a => {
+    const c = COLORS[a.level];
+    const div = document.createElement('div');
+    div.style.cssText = `background:${c.bg};border:1px solid ${c.border};color:${c.text};padding:8px 14px;border-radius:6px;font-size:12px;margin-bottom:6px;line-height:1.5;`;
+    div.textContent = a.text;
+    ar.appendChild(div);
+  });
+}
+
+// ══════════════════════════════════════════════
+// FISH MATRIX
+// ══════════════════════════════════════════════
+function renderFishMatrix(fish) {
+  const container = document.getElementById('fish-bars');
+  container.innerHTML = '';
+  const species = [
+    { key:'Warata_Dorade',  label:'🐟 وراطة (Dorade Royale)',   color:'#f59e0b' },
+    { key:'Mankous_Marbre', label:'🐟 منقوس (Marbré)',          color:'#10b981' },
+    { key:'Qaros_Loup',     label:'🐟 قاروس (Loup / Bar)',      color:'#3b82f6' },
+    { key:'Bouri_Mulet',    label:'🐟 بوري (Mulet)',            color:'#8b5cf6' },
+    { key:'Domibak_Pagre',  label:'🐟 دومبك (Pagre)',           color:'#06b6d4' },
+    { key:'Sorra_Qoradh',   label:'⚠️ صرّة/قرداح (Toadfish)',  color:'#ef4444' },
+  ];
+  species.forEach(s => {
+    const pct = fish[s.key] || 0;
+    const div = document.createElement('div');
+    div.className = 'fish-bar';
+    div.innerHTML = `
+      <div class="fish-bar-label">${s.label}</div>
+      <div class="fish-bar-track">
+        <div class="fish-bar-fill" style="width:0%;background:${s.color};" data-target="${pct}"></div>
+      </div>
+      <div class="fish-pct" style="color:${s.color};">${pct}%</div>
+    `;
+    container.appendChild(div);
+  });
+  setTimeout(() => {
+    container.querySelectorAll('.fish-bar-fill').forEach(b => { b.style.width = b.dataset.target + '%'; });
+  }, 150);
+
+  const sa = document.getElementById('sorra-alert-box');
+  if (fish.sorra_line_cut_alert) {
+    sa.style.display = 'block';
+    sa.innerHTML = `
+      <div style="background:#450a0a;border:1px solid #ef4444;border-radius:8px;padding:12px;">
+        <div style="color:#fca5a5;font-weight:700;margin-bottom:6px;">🦈 تحذير حرج: قرداح / Sorra نشط!</div>
+        <div style="color:#fca5a5;font-size:12px;line-height:1.7;">
+          الخيط المونوفيلان في خطر قطع فوري. استخدم حتماً خيطاً مضفراً (Tresse PE 30lb+) أو فلوروكاربون مقوى 0.50mm+<br/>
+          <b>ALERTE:</b> Sorra/Qoradh actif — monofilament coupé quasi-certain. Utilisez du tressé PE (30lb+) ou fluorocarbone renforcé.
+        </div>
+      </div>`;
+  } else {
+    sa.style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════════
+// FORECAST
+// FIX #15: formatDate avec fallback robuste
+// ══════════════════════════════════════════════
+function formatDate(isoStr) {
+  try {
+    const d = new Date(isoStr.includes('T') ? isoStr : isoStr + 'T00:00');
+    // FIX #15: utiliser 'fr-FR' (plus supporté) au lieu de 'fr-TN'
+    return d.toLocaleString('fr-FR', {
+      weekday:'short', month:'short', day:'numeric',
+      hour:'2-digit', minute:'2-digit'
+    });
+  } catch(e) {
+    return isoStr;
+  }
+}
+
+function renderForecast(forecast) {
+  const container = document.getElementById('forecast-list');
+  container.innerHTML = '';
+  if (!forecast || forecast.length === 0) {
+    container.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;padding:16px;text-align:center;">لا توجد توقعات | Aucune prévision</div>';
+    return;
+  }
+  forecast.forEach((f, idx) => {
+    const sc = f.score;
+    const scoreColor = sc >= 70 ? '#10b981' : sc >= 45 ? '#f59e0b' : '#ef4444';
+    const vcls = f.wave_cls || 'ONSHORE';
+    const vclsAr = vcls === 'ONSHORE' ? 'موجة شاطئية ✅' : vcls === 'LONGSHORE' ? 'دريفت ↔️' : 'بحرية 🌊';
+    const rankColors = ['#f59e0b','#94a3b8','#b45309'];
+    const item = document.createElement('div');
+    item.className = 'forecast-item';
+    item.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="background:${rankColors[idx]||'#3b82f6'};color:#0a0f1a;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;">${idx+1}</div>
         <div>
-          <div style="font-size:10px;color:#64748b;margin-bottom:3px;">الريح | Vent</div>
-          <span class="vector-badge ${badgeClass(windCls)}">
-            ${badgeIcon(windCls)} ${windCls} (Δ=${cc.wind_delta_deg}°)
-          </span>
+          <div style="font-weight:700;color:var(--text-primary);">${formatDate(f.time)}</div>
+          <div style="font-size:11px;color:var(--text-secondary);">${vclsAr} | ${f.wave_h.toFixed(2)}m adj.</div>
         </div>
-        <div>
-          <div style="font-size:10px;color:#64748b;margin-bottom:3px;">التضخم | Houle</div>
-          <span class="vector-badge ${badgeClass(swellCls)}">
-            ${badgeIcon(swellCls)} ${swellCls} (Δ=${cc.swell_delta_deg}°)
-          </span>
-        </div>
-        <div style="color: var(--text-secondary); font-size: 11px; align-self: center;">
-          المعيار الساحلي: ${data.shore_normal_deg}° | عامل الحماية: ${data.shelter_factor}
-        </div>
-      `;
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:1.2rem;font-weight:900;color:${scoreColor};">${f.score.toFixed(0)}</div>
+        <div style="font-size:10px;color:var(--text-secondary);">/100</div>
+      </div>
+    `;
+    container.appendChild(item);
+  });
+}
+
+// ══════════════════════════════════════════════
+// QUICK CONDITIONS — FIX #13: unité km/h affichée
+// ══════════════════════════════════════════════
+function renderQuickConditions(data) {
+  const panel = document.getElementById('quick-conditions');
+  const content = document.getElementById('quick-cond-content');
+  panel.style.display = 'block';
+  const cc = data.current_conditions;
+  const items = [
+    { icon:'🌊', label:'Vague brute',   val:`${cc.wave_height?.toFixed(2)}m` },
+    { icon:'⚡', label:'Vague adj.',    val:`${cc.wave_height_adjusted?.toFixed(2)}m` },
+    { icon:'⏱️', label:'Période',       val:`${cc.wave_period?.toFixed(1)}s` },
+    // FIX #13: km/h ET noeuds affichés tous les deux
+    { icon:'💨', label:'Vent',          val:`${cc.wind_speed_kmh?.toFixed(1)} km/h (${cc.wind_speed_kn?.toFixed(1)} kn) / ${degreeToCompass(cc.wind_direction)} ${cc.wind_direction?.toFixed(0)}°` },
+    { icon:'🌐', label:'Houle',         val:`${cc.swell_height?.toFixed(2)}m / ${cc.swell_period?.toFixed(1)}s` },
+  ];
+  content.innerHTML = items.map(i =>
+    `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1e2d45;font-size:11.5px;">
+      <span style="color:var(--text-secondary);">${i.icon} ${i.label}</span>
+      <span style="font-weight:700;color:var(--text-primary);">${i.val}</span>
+    </div>`
+  ).join('');
+}
+
+// ══════════════════════════════════════════════
+// TIDAL PANEL
+// ══════════════════════════════════════════════
+function renderTidalPanel(tidal) {
+  const panel = document.getElementById('tidal-panel');
+  const content = document.getElementById('tidal-content');
+  panel.style.display = 'block';
+  const stateColors = { RISING:'#10b981', HIGH_TIDE:'#06b6d4', FALLING:'#f59e0b', LOW_TIDE:'#ef4444' };
+  const stateAr = { RISING:'مد صاعد 📈', HIGH_TIDE:'مد عالٍ 🔝', FALLING:'جزر نازل 📉', LOW_TIDE:'جزر منخفض 🔽' };
+  const color = stateColors[tidal.state] || '#94a3b8';
+  const pct = Math.round(((tidal.height_m + tidal.amplitude_m) / (2 * tidal.amplitude_m)) * 100);
+  content.innerHTML = `
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;">
+      <span style="color:${color};font-weight:700;">${stateAr[tidal.state]||tidal.state}</span>
+      <span style="color:var(--text-secondary);">${tidal.height_m}m</span>
+    </div>
+    <div class="tide-bar"><div class="tide-fill" style="width:${Math.max(5,Math.min(100,pct))}%;background:${color};"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:6px;">
+      <span style="color:var(--text-secondary);">H. haute dans: ${tidal.hours_to_high}h</span>
+      <span style="color:${color};">×${tidal.tidal_boost}</span>
+      <span style="background:${tidal.regime==='macro'?'#450a0a':'#064e3b'};color:${tidal.regime==='macro'?'#fca5a5':'#6ee7b7'};padding:1px 8px;border-radius:10px;font-size:10px;">${tidal.regime==='macro'?'🔴 MACRO':'🟢 micro'}</span>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════
+// GOVERNORATE RANKING
+// ══════════════════════════════════════════════
+async function rankGovernorate() {
+  const gov = document.getElementById('gov-select').value;
+  if (!gov) { alert('اختر ولاية | Choisissez un gouvernorat'); return; }
+
+  setLoading(true, `جاري تقييم مواقع ${gov}... | Évaluation des spots de ${gov}...`);
+  switchTab('leaderboard');
+
+  try {
+    const resp = await fetch(`${API_BASE}/governorate_rank`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ governorate: gov })
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ detail: `HTTP ${resp.status}` }));
+      throw new Error(err.detail || `HTTP ${resp.status}`);
     }
+    const data = await resp.json();
+    setLoading(false);
+    renderLeaderboard(data);
+  } catch (e) {
+    setLoading(false);
+    document.getElementById('leaderboard-container').innerHTML = `
+      <div style="background:#450a0a;border:1px solid #ef4444;border-radius:8px;padding:16px;color:#fca5a5;font-size:13px;">
+        خطأ | Erreur: ${e.message}
+      </div>`;
+  }
+}
 
-    function classify(delta) {
-      if (delta < 60) return 'ONSHORE';
-      if (delta <= 120) return 'LONGSHORE';
-      return 'OFFSHORE';
-    }
+function renderLeaderboard(data) {
+  const container = document.getElementById('leaderboard-container');
+  const rankColors = ['rank-gold','rank-silver','rank-bronze'];
+  const rankIcons  = ['🥇','🥈','🥉'];
 
-    // ══════════════════════════════════════════════════════════
-    // RENDER ALERTS
-    // ══════════════════════════════════════════════════════════
-    function renderAlerts(data) {
-      const ar = document.getElementById('alerts-row');
-      ar.innerHTML = '';
+  let html = `
+    <div style="margin-bottom:16px;">
+      <h3 style="font-size:1rem;font-weight:700;color:var(--accent-yellow);">🏆 أفضل 3 مواقع — ${data.governorate}</h3>
+      <p style="font-size:12px;color:var(--text-secondary);margin-top:4px;">
+        تم تقييم ${data.total_spots_evaluated} موقع | ${formatDate(data.timestamp_tunis)}
+        ${data.failed_spots > 0 ? `<span style="color:#f59e0b;"> | ⚠️ ${data.failed_spots} مواقع فشلت</span>` : ''}
+      </p>
+    </div>`;
 
-      const alerts = [];
+  data.leaderboard.forEach((spot, idx) => {
+    const sc = spot.score;
+    const scoreColor = sc >= 65 ? '#10b981' : sc >= 40 ? '#f59e0b' : '#ef4444';
+    const fishEntries = Object.entries(spot.fish_activity)
+      .filter(([k]) => !k.includes('alert'))
+      .sort(([,a],[,b]) => b - a).slice(0, 2);
 
-      if (data.seaweed.rip_critical) {
-        alerts.push({
-          level: 'critical',
-          text: '⚠️ خطر تيارات قطع حرجة | Courant de rip CRITIQUE — Danger mortel même si mer calme en apparence!'
-        });
-      }
-
-      if (data.seaweed.floating_debris_warning) {
-        alerts.push({
-          level: 'warning',
-          text: '🌿 تحذير حطام طافٍ | Débris flottants et algues résiduelles — risque emmêlement'
-        });
-      }
-
-      if (data.fish_activity.sorra_line_cut_alert) {
-        alerts.push({
-          level: 'warning',
-          text: '🦈 تحذير قرداح — خطر قطع الخيط! | ALERTE SORRA: Toadfish actif — utiliser du tressé obligatoirement!'
-        });
-      }
-
-      if (data.current_conditions.wave_classification === 'LONGSHORE') {
-        alerts.push({
-          level: 'warning',
-          text: '↔️ دريفت ساحلي شديد | Dérive longshore sévère — Instabilité du plomb garantie — Changement de spot recommandé'
-        });
-      }
-
-      if (data.tidal.regime === 'macro' && data.tidal.state === 'LOW_TIDE') {
-        alerts.push({
-          level: 'info',
-          text: `🌊 جزر منخفض في منطقة ماكروتيدال | Basse mer en zone macrotidale (Golfe de Gabès) — hauteur: ${data.tidal.height_m}m — activité réduite`
-        });
-      }
-
-      alerts.forEach(a => {
-        const colors = {
-          critical: { bg: '#450a0a', border: '#ef4444', text: '#fca5a5' },
-          warning: { bg: '#451a03', border: '#f59e0b', text: '#fde68a' },
-          info: { bg: '#1e3a5f', border: '#3b82f6', text: '#93c5fd' }
-        };
-        const c = colors[a.level];
-        const div = document.createElement('div');
-        div.style.cssText = `background:${c.bg};border:1px solid ${c.border};color:${c.text};padding:8px 14px;border-radius:6px;font-size:12px;margin-bottom:6px;`;
-        div.textContent = a.text;
-        ar.appendChild(div);
-      });
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // RENDER FISH MATRIX
-    // ══════════════════════════════════════════════════════════
-    function renderFishMatrix(fish) {
-      const container = document.getElementById('fish-bars');
-      container.innerHTML = '';
-
-      const species = [
-        { key: 'Warata_Dorade', label: '🐟 وراطة (Dorade Royale)', color: '#f59e0b' },
-        { key: 'Mankous_Marbre', label: '🐟 منقوس (Marbré)', color: '#10b981' },
-        { key: 'Qaros_Loup', label: '🐟 قاروس (Loup/Bar)', color: '#3b82f6' },
-        { key: 'Bouri_Mulet', label: '🐟 بوري (Mulet)', color: '#8b5cf6' },
-        { key: 'Domibak_Pagre', label: '🐟 دومبك (Pagre)', color: '#06b6d4' },
-        { key: 'Sorra_Qoradh', label: '⚠️ صرّة/قرداح (Toadfish)', color: '#ef4444' },
-      ];
-
-      species.forEach(s => {
-        const pct = fish[s.key] || 0;
-        const div = document.createElement('div');
-        div.className = 'fish-bar';
-        div.innerHTML = `
-          <div class="fish-bar-label">${s.label}</div>
-          <div class="fish-bar-track">
-            <div class="fish-bar-fill" style="width:0%;background:${s.color};" data-target="${pct}"></div>
-          </div>
-          <div class="fish-pct" style="color:${s.color};">${pct}%</div>
-        `;
-        container.appendChild(div);
-      });
-
-      // Animate bars
-      setTimeout(() => {
-        container.querySelectorAll('.fish-bar-fill').forEach(bar => {
-          bar.style.width = bar.dataset.target + '%';
-        });
-      }, 150);
-
-      // Sorra Alert
-      const sa = document.getElementById('sorra-alert-box');
-      if (fish.sorra_line_cut_alert) {
-        sa.style.display = 'block';
-        sa.innerHTML = `
-          <div style="background:#450a0a;border:1px solid #ef4444;border-radius:8px;padding:12px;">
-            <div style="color:#fca5a5;font-weight:700;margin-bottom:4px;">🦈 تحذير حرج: قرداح / Sorra نشط!</div>
-            <div style="color:#fca5a5;font-size:12px;line-height:1.6;">
-              الخيط المونوفيلان في خطر قطع مباشر من أسنان الصرّة الحادة.<br/>
-              <strong>الحل:</strong> استخدم حتماً خيوطاً مضفرة (Tresse/PE) أو نايلون مقوى 0.50mm+.<br/><br/>
-              <strong>ALERTE:</strong> Sorra/Qoradh (Halobatrachus didactylus) actif — coupe de monofilament quasi-certaine.<br/>
-              <strong>Solution:</strong> Utilisez impérativement du tressé (PE/Braid) ou fluorocarbone renforcé.
-            </div>
-          </div>
-        `;
-      } else {
-        sa.style.display = 'none';
-      }
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // RENDER FORECAST
-    // ══════════════════════════════════════════════════════════
-    function renderForecast(forecast) {
-      const container = document.getElementById('forecast-list');
-      container.innerHTML = '';
-
-      if (!forecast || forecast.length === 0) {
-        container.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;padding:16px;">لا توجد بيانات توقعات متاحة | Aucune prévision disponible</div>';
-        return;
-      }
-
-      forecast.forEach((f, idx) => {
-        const scoreColor = f.score >= 70 ? '#10b981' : f.score >= 45 ? '#f59e0b' : '#ef4444';
-        const vcls = f.wave_cls || 'ONSHORE';
-        const vclsAr = vcls === 'ONSHORE' ? 'موجة شاطئية' : vcls === 'LONGSHORE' ? 'دريفت ساحلي' : 'موجة بحرية';
-
-        const item = document.createElement('div');
-        item.className = 'forecast-item';
-        item.innerHTML = `
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div style="background:${['#f59e0b','#94a3b8','#b45309'][idx] || '#3b82f6'};color:#0a0f1a;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;">
-              ${idx + 1}
-            </div>
+    html += `
+      <div class="leaderboard-entry ${rankColors[idx]||''}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:1.5rem;">${rankIcons[idx]||'🎣'}</span>
             <div>
-              <div style="font-size:12px;font-weight:700;color:var(--text-primary);">${formatDate(f.time)}</div>
-              <div style="font-size:11px;color:var(--text-secondary);">${vclsAr} | ${f.wave_h.toFixed(2)}m adj.</div>
+              <div style="font-weight:700;color:var(--text-primary);">${spot.beach_name}</div>
+              <div style="font-size:11px;color:var(--text-secondary);">
+                ${spot.wave_classification} | Vague: ${spot.adjusted_wave_height_m?.toFixed(2)}m
+                <!-- FIX: Vent affiché en km/h -->
+                | 💨 ${spot.wind_speed_kmh?.toFixed(1)} km/h (${spot.wind_speed_kn?.toFixed(1)} kn)
+              </div>
             </div>
           </div>
           <div style="text-align:right;">
-            <div style="font-size:1.1rem;font-weight:900;color:${scoreColor};">${f.score.toFixed(0)}</div>
+            <div style="font-size:1.8rem;font-weight:900;color:${scoreColor};">${sc}</div>
             <div style="font-size:10px;color:var(--text-secondary);">/100</div>
           </div>
-        `;
-        container.appendChild(item);
-      });
-    }
-
-    function formatDate(isoStr) {
-      try {
-        const d = new Date(isoStr);
-        return d.toLocaleString('fr-TN', {
-          weekday: 'short', month: 'short', day: 'numeric',
-          hour: '2-digit', minute: '2-digit'
-        });
-      } catch(e) { return isoStr; }
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // RENDER QUICK CONDITIONS
-    // ══════════════════════════════════════════════════════════
-    function renderQuickConditions(data) {
-      const panel = document.getElementById('quick-conditions');
-      const content = document.getElementById('quick-cond-content');
-      panel.style.display = 'block';
-
-      const cc = data.current_conditions;
-      const items = [
-        { icon: '🌊', label: 'Vague brute', val: `${cc.wave_height?.toFixed(2)}m` },
-        { icon: '⚡', label: 'Vague adj.', val: `${cc.wave_height_adjusted?.toFixed(2)}m` },
-        { icon: '⏱️', label: 'Période', val: `${cc.wave_period?.toFixed(1)}s` },
-        { icon: '💨', label: 'Vent', val: `${cc.wind_speed?.toFixed(1)}kn / ${cc.wind_direction?.toFixed(0)}°` },
-        { icon: '🌐', label: 'Houle', val: `${cc.swell_height?.toFixed(2)}m / ${cc.swell_period?.toFixed(1)}s` },
-      ];
-
-      content.innerHTML = items.map(i =>
-        `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1e2d45;font-size:12px;">
-          <span style="color:var(--text-secondary);">${i.icon} ${i.label}</span>
-          <span style="font-weight:700;color:var(--text-primary);">${i.val}</span>
-        </div>`
-      ).join('');
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // RENDER TIDAL PANEL
-    // ══════════════════════════════════════════════════════════
-    function renderTidalPanel(tidal) {
-      const panel = document.getElementById('tidal-panel');
-      const content = document.getElementById('tidal-content');
-      panel.style.display = 'block';
-
-      const stateColors = {
-        RISING: '#10b981', HIGH_TIDE: '#06b6d4',
-        FALLING: '#f59e0b', LOW_TIDE: '#ef4444'
-      };
-      const stateAr = {
-        RISING: 'مد صاعد 📈', HIGH_TIDE: 'مد عالٍ 🔝',
-        FALLING: 'جزر نازل 📉', LOW_TIDE: 'جزر منخفض 🔽'
-      };
-
-      const pct = Math.round(((tidal.height_m + tidal.amplitude_m) / (2 * tidal.amplitude_m)) * 100);
-      const color = stateColors[tidal.state] || '#94a3b8';
-
-      content.innerHTML = `
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;">
-          <span style="color:${color};font-weight:700;">${stateAr[tidal.state] || tidal.state}</span>
-          <span style="color:var(--text-secondary);">${tidal.height_m}m</span>
         </div>
-        <div class="tide-bar">
-          <div class="tide-fill" style="width:${Math.max(5, Math.min(100, pct))}%;background:${color};"></div>
+        <div style="font-size:13px;font-weight:700;color:${sc>=55?'#10b981':'#ef4444'};margin-bottom:8px;">
+          ${spot.verdict_ar} | ${spot.verdict_fr}
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:6px;">
-          <span style="color:var(--text-secondary);">H. prochaine: ${tidal.hours_to_high}h</span>
-          <span style="color:${color};">×${tidal.tidal_boost}</span>
-          <span style="color:var(--text-secondary);">${tidal.regime === 'macro' ? '🔴 MACRO' : '🟢 micro'}</span>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;font-size:11px;">
+          <span style="color:#f59e0b;">🪸 ${spot.seaweed_pct}%</span>
+          <span style="color:#10b981;">🌀 ${spot.rip_safety_pct}%</span>
+          <span style="color:#38bdf8;">🌊 ${spot.tidal_state} ×${spot.tidal_boost}</span>
+          <span style="color:#94a3b8;">🛡️ ×${spot.shelter_factor}</span>
         </div>
-      `;
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // GOVERNORATE RANKING
-    // ══════════════════════════════════════════════════════════
-    async function rankGovernorate() {
-      const gov = document.getElementById('gov-select').value;
-      if (!gov) {
-        alert('اختر ولاية أولاً | Choisissez d\'abord un gouvernorat');
-        return;
-      }
-
-      setLoading(true, `جاري تقييم جميع مواقع ${gov}... | Évaluation de tous les spots de ${gov}...`);
-      switchTab('leaderboard');
-
-      try {
-        const response = await fetch(`${API_BASE}/governorate_rank`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ governorate: gov })
-        });
-
-        if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.detail || `HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
-        setLoading(false);
-        renderLeaderboard(data);
-
-      } catch (error) {
-        setLoading(false);
-        showLeaderboardError(`خطأ | Erreur: ${error.message}`);
-      }
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // RENDER LEADERBOARD
-    // ══════════════════════════════════════════════════════════
-    function renderLeaderboard(data) {
-      const container = document.getElementById('leaderboard-container');
-      const rankColors = ['rank-gold', 'rank-silver', 'rank-bronze'];
-      const rankIcons = ['🥇', '🥈', '🥉'];
-
-      let html = `
-        <div style="margin-bottom:16px;">
-          <h3 style="font-size:1rem;font-weight:700;color:var(--accent-yellow);">
-            🏆 أفضل 3 مواقع في ${data.governorate}
-          </h3>
-          <p style="font-size:12px;color:var(--text-secondary);margin-top:4px;">
-            تم تقييم ${data.total_spots_evaluated} موقع | ${data.total_spots_evaluated} spots évalués — ${formatDate(data.timestamp_utc)}
-          </p>
+        <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;">
+          🐟 ${fishEntries.map(([k,v])=>`<span style="color:#06b6d4;">${k.split('_')[0]}: ${v}%</span>`).join(' | ')}
         </div>
-      `;
+        ${spot.top_justification?.length > 0 ? `
+        <div style="font-size:11px;color:#94a3b8;line-height:1.7;">
+          ${spot.top_justification.map(j=>`• ${j}`).join('<br/>')}
+        </div>` : ''}
+        <button onclick="analyzeFromMarker(${spot.coordinates.lat},${spot.coordinates.lon})"
+          style="margin-top:10px;padding:7px 14px;background:linear-gradient(135deg,#1d4ed8,#0284c7);border:none;border-radius:6px;color:white;font-size:11px;cursor:pointer;font-weight:700;">
+          ⚡ تحليل كامل | Analyse complète
+        </button>
+      </div>`;
+  });
 
-      data.leaderboard.forEach((spot, idx) => {
-        const scoreColor = spot.score >= 65 ? '#10b981' : spot.score >= 40 ? '#f59e0b' : '#ef4444';
-        const vcls = spot.wave_classification;
-        const vclsAr = vcls === 'ONSHORE' ? 'موجة شاطئية ✅' : vcls === 'LONGSHORE' ? 'دريفت ساحلي ⚠️' : 'موجة بحرية 🌊';
-
-        // Fish top 2
-        const fishEntries = Object.entries(spot.fish_activity)
-          .filter(([k]) => !k.includes('alert'))
-          .sort(([,a],[,b]) => b - a)
-          .slice(0, 2);
-
-        html += `
-          <div class="leaderboard-entry ${rankColors[idx] || ''}">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <div style="display:flex;align-items:center;gap:10px;">
-                <span style="font-size:1.5rem;">${rankIcons[idx] || '🎣'}</span>
-                <div>
-                  <div style="font-weight:700;color:var(--text-primary);">${spot.beach_name}</div>
-                  <div style="font-size:11px;color:var(--text-secondary);">${vclsAr} | Vague adj: ${spot.adjusted_wave_height_m?.toFixed(2)}m</div>
-                </div>
-              </div>
-              <div style="text-align:right;">
-                <div style="font-size:1.8rem;font-weight:900;color:${scoreColor};">${spot.score}</div>
-                <div style="font-size:10px;color:var(--text-secondary);">/100</div>
-              </div>
-            </div>
-
-            <!-- Verdict -->
-            <div style="font-size:13px;font-weight:700;color:${spot.score >= 55 ? '#10b981' : '#ef4444'};margin-bottom:8px;">
-              ${spot.verdict_ar} | ${spot.verdict_fr}
-            </div>
-
-            <!-- Mini gauges row -->
-            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;font-size:11px;">
-              <span style="color:#f59e0b;">🪸 ${spot.seaweed_pct}%</span>
-              <span style="color:#10b981;">🌀 ${spot.rip_safety_pct}%</span>
-              <span style="color:#38bdf8;">🌊 ${spot.tidal_state} ×${spot.tidal_boost}</span>
-              <span style="color:#94a3b8;">🛡️ Abri: ${spot.shelter_factor}</span>
-            </div>
-
-            <!-- Top fish -->
-            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;">
-              🐟 أنشط الأسماك | Poissons actifs:
-              ${fishEntries.map(([k,v]) => `<span style="color:#06b6d4;">${k.split('_')[0]}: ${v}%</span>`).join(' | ')}
-            </div>
-
-            <!-- Justifications -->
-            ${spot.top_justification && spot.top_justification.length > 0 ? `
-            <div style="font-size:11px;color:#94a3b8;line-height:1.6;">
-              ${spot.top_justification.map(j => `• ${j}`).join('<br/>')}
-            </div>
-            ` : ''}
-
-            <!-- Analyze button -->
-            <button onclick="analyzeFromMarker(${spot.coordinates.lat}, ${spot.coordinates.lon})"
-              style="margin-top:10px;padding:7px 14px;background:#1d4ed8;border:none;border-radius:6px;color:white;font-size:11px;cursor:pointer;font-weight:700;">
-              ⚡ تحليل كامل | Analyse complète
-            </button>
+  // Mini table all spots
+  html += `
+    <div style="margin-top:16px;">
+      <h4 style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">الترتيب الكامل | Classement complet</h4>
+      ${data.all_spots_ranked.map(s => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#0d1728;border-radius:4px;margin-bottom:4px;font-size:12px;">
+          <span style="color:var(--text-secondary);">${s.rank}. ${s.name}</span>
+          <div style="display:flex;gap:12px;align-items:center;">
+            <span style="color:#94a3b8;font-size:10px;">💨 ${s.wind_kmh?.toFixed(0)} km/h</span>
+            <span style="font-weight:700;color:${s.score>=55?'#10b981':s.score>=40?'#f59e0b':'#ef4444'};">${s.score}/100</span>
           </div>
-        `;
-      });
+        </div>`).join('')}
+    </div>`;
 
-      // All spots mini-table
-      html += `
-        <div style="margin-top:16px;">
-          <h4 style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">ترتيب كامل | Classement complet</h4>
-          ${data.all_spots_ranked.map(s => `
-            <div style="display:flex;justify-content:space-between;padding:6px 10px;background:#0d1728;border-radius:4px;margin-bottom:4px;font-size:12px;">
-              <span style="color:var(--text-secondary);">${s.rank}. ${s.name}</span>
-              <span style="font-weight:700;color:${s.score >= 55 ? '#10b981' : s.score >= 40 ? '#f59e0b' : '#ef4444'};">${s.score}/100</span>
-            </div>
-          `).join('')}
-        </div>
-      `;
+  container.innerHTML = html;
+}
 
-      container.innerHTML = html;
-    }
+// ══════════════════════════════════════════════
+// ADD ANALYSIS MARKER
+// ══════════════════════════════════════════════
+function addAnalysisMarker(data) {
+  if (analysisMarker) map.removeLayer(analysisMarker);
+  const color = data.verdict === 'SPOT_APPROVED' ? '#10b981' : '#ef4444';
+  const icon = L.divIcon({
+    className: '',
+    html: `<div style="width:26px;height:26px;background:${color};border:3px solid white;border-radius:50%;box-shadow:0 0 20px ${color};display:flex;align-items:center;justify-content:center;font-size:14px;">${data.verdict==='SPOT_APPROVED'?'✅':'🚫'}</div>`,
+    iconSize: [26,26], iconAnchor: [13,13]
+  });
+  analysisMarker = L.marker([currentLat, currentLon], { icon }).addTo(map);
+  analysisMarker.bindPopup(`
+    <div style="background:#111827;color:#e2e8f0;padding:10px;border-radius:8px;font-size:12px;border:1px solid ${color};">
+      <b>${data.beach_name}</b><br/>Score: ${data.score}/100<br/>${data.verdict_ar}
+    </div>`).openPopup();
+}
 
-    function showLeaderboardError(msg) {
-      document.getElementById('leaderboard-container').innerHTML = `
-        <div style="background:#450a0a;border:1px solid #ef4444;border-radius:8px;padding:16px;color:#fca5a5;font-size:13px;">
-          ${msg}
-        </div>
-      `;
-    }
+// ══════════════════════════════════════════════
+// FIX #17: TAB SWITCHING (data-tab attribute)
+// ══════════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => {
+    p.classList.toggle('active', p.id === `tab-${tab}`);
+  });
+}
 
-    // ══════════════════════════════════════════════════════════
-    // ADD ANALYSIS MARKER TO MAP
-    // ══════════════════════════════════════════════════════════
-    let analysisMarker = null;
+// ══════════════════════════════════════════════
+// LOADING
+// ══════════════════════════════════════════════
+function setLoading(state, text = '') {
+  const overlay = document.getElementById('loading-overlay');
+  const btn = document.getElementById('analyze-btn');
+  overlay.style.display = state ? 'block' : 'none';
+  if (state && text) document.getElementById('loading-text').textContent = text;
+  if (btn) { btn.disabled = state; btn.style.opacity = state ? '0.5' : '1'; }
+}
 
-    function addAnalysisMarker(data) {
-      if (analysisMarker) {
-        map.removeLayer(analysisMarker);
-      }
-      const color = data.verdict === 'SPOT_APPROVED' ? '#10b981' : '#ef4444';
-      const icon = L.divIcon({
-        className: '',
-        html: `
-          <div style="
-            width:24px;height:24px;
-            background:${color};
-            border:3px solid white;
-            border-radius:50%;
-            box-shadow:0 0 16px ${color};
-            display:flex;align-items:center;justify-content:center;
-            font-size:14px;
-          ">${data.verdict === 'SPOT_APPROVED' ? '✅' : '🚫'}</div>
-        `,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
-      });
-      analysisMarker = L.marker([currentLat, currentLon], { icon }).addTo(map);
-      analysisMarker.bindPopup(`
-        <div style="background:#111827;color:#e2e8f0;padding:10px;border-radius:8px;font-size:12px;">
-          <b>${data.beach_name}</b><br/>
-          Score: ${data.score}/100<br/>
-          ${data.verdict_ar}
-        </div>
-      `).openPopup();
-    }
+// ══════════════════════════════════════════════
+// COPY REPORT
+// ══════════════════════════════════════════════
+function copyReport() {
+  const text = document.getElementById('report-box').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    const prev = btn.textContent;
+    btn.textContent = '✅ تم النسخ!';
+    setTimeout(() => btn.textContent = prev, 2000);
+  }).catch(() => alert('لا يمكن النسخ في هذا المتصفح'));
+}
 
-    // ══════════════════════════════════════════════════════════
-    // TAB SWITCHING
-    // ══════════════════════════════════════════════════════════
-    function switchTab(tab) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+// ══════════════════════════════════════════════
+// SHOW ERROR
+// ══════════════════════════════════════════════
+function showError(msg) {
+  const vb = document.getElementById('verdict-banner');
+  vb.className = 'verdict-change';
+  vb.innerHTML = `
+    <div style="font-size:1.5rem;">⚠️</div>
+    <div>خطأ في الاتصال | Erreur de connexion</div>
+    <div style="font-size:12px;opacity:0.8;margin-top:6px;direction:ltr;">${msg}</div>
+    <div style="font-size:11px;opacity:0.6;margin-top:4px;">
+      تأكد أن Render.com يعمل وأن API_BASE صحيح<br/>
+      Vérifiez que Render.com est actif et que API_BASE est correct
+    </div>`;
+}
 
-      const panel = document.getElementById(`tab-${tab}`);
-      if (panel) panel.classList.add('active');
+// ══════════════════════════════════════════════
+// CLOCK
+// ══════════════════════════════════════════════
+function updateClock() {
+  const el = document.getElementById('clock-display');
+  if (!el) return;
+  const now = new Date();
+  // FIX #15: 'fr-FR' au lieu de 'fr-TN'
+  try {
+    el.textContent = now.toLocaleString('fr-FR', {
+      timeZone:'Africa/Tunis', hour:'2-digit', minute:'2-digit',
+      second:'2-digit', day:'2-digit', month:'2-digit', year:'numeric'
+    }) + ' (Tunis)';
+  } catch(e) {
+    el.textContent = now.toISOString().slice(0,19).replace('T',' ') + ' UTC';
+  }
+}
 
-      document.querySelectorAll('.tab-btn').forEach(b => {
-        if (b.getAttribute('onclick')?.includes(`'${tab}'`)) {
-          b.classList.add('active');
-        }
-      });
-    }
+// ══════════════════════════════════════════════
+// API HEALTH CHECK
+// ══════════════════════════════════════════════
+async function checkApiHealth() {
+  const el = document.getElementById('system-status');
+  try {
+    const resp = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(9000) });
+    if (resp.ok) {
+      const data = await resp.json();
+      el.textContent = '● SYSTÈME EN LIGNE';
+      el.style.cssText = 'font-size:11px;color:#10b981;background:#064e3b;padding:3px 10px;border-radius:12px;border:1px solid #10b981;';
+    } else throw new Error();
+  } catch (e) {
+    el.textContent = '● Render en veille (30s...)';
+    el.style.cssText = 'font-size:11px;color:#f59e0b;background:#451a03;padding:3px 10px;border-radius:12px;border:1px solid #f59e0b;';
+  }
+}
 
-    // ══════════════════════════════════════════════════════════
-    // LOADING STATE
-    // ══════════════════════════════════════════════════════════
-    function setLoading(state, text = '') {
-      const overlay = document.getElementById('loading-overlay');
-      const analyzeBtn = document.getElementById('analyze-btn');
-
-      if (state) {
-        overlay.style.display = 'block';
-        document.getElementById('loading-text').textContent = text;
-        if (analyzeBtn) {
-          analyzeBtn.disabled = true;
-          analyzeBtn.style.opacity = '0.5';
-        }
-      } else {
-        overlay.style.display = 'none';
-        if (analyzeBtn) {
-          analyzeBtn.disabled = false;
-          analyzeBtn.style.opacity = '1';
-        }
-      }
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // COPY REPORT
-    // ══════════════════════════════════════════════════════════
-    function copyReport() {
-      const text = document.getElementById('report-box').textContent;
-      navigator.clipboard.writeText(text).then(() => {
-        const btn = event.target;
-        btn.textContent = '✅ تم النسخ!';
-        setTimeout(() => btn.textContent = '📋 نسخ | Copier', 2000);
-      });
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // SHOW ERROR
-    // ══════════════════════════════════════════════════════════
-    function showError(msg) {
-      const vb = document.getElementById('verdict-banner');
-      vb.className = 'verdict-change';
-      vb.innerHTML = `
-        <div style="font-size:1.5rem;">⚠️</div>
-        <div style="font-size:1rem;">خطأ في الاتصال | Erreur de connexion</div>
-        <div style="font-size:12px;opacity:0.8;margin-top:6px;">${msg}</div>
-      `;
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // LIVE CLOCK
-    // ══════════════════════════════════════════════════════════
-    function updateClock() {
-      const el = document.getElementById('clock-display');
-      if (el) {
-        const now = new Date();
-        el.textContent = now.toLocaleString('fr-TN', {
-          timeZone: 'Africa/Tunis',
-          hour: '2-digit', minute: '2-digit', second: '2-digit',
-          day: '2-digit', month: '2-digit', year: 'numeric'
-        }) + ' (Tunis)';
-      }
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // API HEALTH CHECK ON LOAD
-    // ══════════════════════════════════════════════════════════
-    async function checkApiHealth() {
-      try {
-        const resp = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(8000) });
-        if (resp.ok) {
-          document.getElementById('system-status').textContent = '● SYSTÈME EN LIGNE';
-          document.getElementById('system-status').style.color = '#10b981';
-          document.getElementById('system-status').style.background = '#064e3b';
-          document.getElementById('system-status').style.borderColor = '#10b981';
-        } else {
-          throw new Error('API offline');
-        }
-      } catch (e) {
-        document.getElementById('system-status').textContent = '● HORS LIGNE (Render waking up...)';
-        document.getElementById('system-status').style.color = '#f59e0b';
-        document.getElementById('system-status').style.background = '#451a03';
-        document.getElementById('system-status').style.borderColor = '#f59e0b';
-      }
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // INITIALIZATION
-    // ══════════════════════════════════════════════════════════
-    document.addEventListener('DOMContentLoaded', () => {
-      initMap();
-      updateClock();
-      setInterval(updateClock, 1000);
-      checkApiHealth();
-      // Recheck health every 2 minutes
-      setInterval(checkApiHealth, 120000);
-    });
-  </script>
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  initMap();
+  updateClock();
+  setInterval(updateClock, 1000);
+  checkApiHealth();
+  setInterval(checkApiHealth, 120000);
+});
+</script>
 </body>
 </html>
